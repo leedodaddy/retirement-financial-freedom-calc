@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>이도대디의 노후대비와 경제적자유를 위한 계산기</title>
+<style>
+  :root{
+    --bg:#0e0f11;
+    --card:#1a1b1e;
+    --card-border:#2a2b2f;
+    --text:#f2f2f2;
+    --muted:#8a8d93;
+    --green:#3ecf8e;
+    --purple:#7c6cf5;
+    --red:#ef5b5b;
+    --blue:#6cb6f5;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic",sans-serif;
+    padding:24px;
+    max-width:1100px;
+    margin:0 auto;
+  }
+  h1{
+    font-size:20px;
+    font-weight:700;
+    margin:0 0 6px 0;
+  }
+  .sub{
+    color:var(--muted);
+    font-size:13px;
+    margin:0 0 20px 0;
+  }
+  .phase-title{
+    font-size:14px;
+    font-weight:700;
+    color:var(--blue);
+    margin:28px 0 12px 0;
+  }
+  .controls{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:16px;
+    margin-bottom:8px;
+  }
+  .control-card{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:14px;
+    padding:20px;
+  }
+  .control-label{
+    color:var(--muted);
+    font-size:13px;
+    margin-bottom:8px;
+  }
+  .control-value{
+    font-size:22px;
+    font-weight:700;
+    margin-bottom:14px;
+  }
+  input[type=range]{
+    width:100%;
+    accent-color:#fff;
+  }
+  .range-bounds{
+    display:flex;
+    justify-content:space-between;
+    color:var(--muted);
+    font-size:12px;
+    margin-top:6px;
+  }
+  .quick-select{
+    display:flex;
+    gap:8px;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+  }
+  .quick-btn{
+    background:#262830;
+    border:1px solid var(--card-border);
+    color:var(--text);
+    padding:6px 14px;
+    border-radius:20px;
+    font-size:12px;
+    cursor:pointer;
+  }
+  .quick-btn:hover{ border-color:var(--blue); }
+  .quick-btn.active{ background:var(--blue); color:#0e0f11; border-color:var(--blue); }
+
+  .result-card{
+    background:var(--card);
+    border:1px solid var(--green);
+    border-radius:14px;
+    padding:28px;
+    margin:24px 0;
+    text-align:center;
+  }
+  .result-card.warn{ border-color:var(--red); }
+  .result-label{
+    color:var(--muted);
+    font-size:13px;
+    margin-bottom:8px;
+  }
+  .result-amount{
+    font-size:34px;
+    font-weight:800;
+    color:var(--green);
+  }
+  .result-amount.warn{ color:var(--red); }
+  .result-sub{
+    color:var(--muted);
+    font-size:13px;
+    margin-top:10px;
+  }
+  .breakdown{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:16px;
+    margin-bottom:24px;
+  }
+  .breakdown-card{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:14px;
+    padding:18px 20px;
+  }
+  .breakdown-card .label{ color:var(--muted); font-size:13px; margin-bottom:8px; }
+  .breakdown-card .value{ font-size:19px; font-weight:700; }
+  .breakdown-card .value.green{ color:var(--green); }
+  .breakdown-card .value.purple{ color:var(--purple); }
+  .breakdown-card .value.red{ color:var(--red); }
+  .breakdown-card .value.blue{ color:var(--blue); }
+  .chart-wrap{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:14px;
+    padding:20px;
+  }
+  .legend{
+    display:flex;
+    gap:18px;
+    margin-bottom:16px;
+    font-size:13px;
+    flex-wrap:wrap;
+  }
+  .legend span.dot{
+    display:inline-block;
+    width:10px;height:10px;border-radius:2px;margin-right:6px;
+  }
+  svg text{ fill:var(--muted); font-size:11px; }
+  .note{
+    color:var(--muted);
+    font-size:12px;
+    margin-top:16px;
+    line-height:1.6;
+  }
+</style>
+</head>
+<body>
+
+<h1>이도대디의 노후대비와 경제적자유를 위한 계산기</h1>
+<p class="sub">매달 적립해서 자산을 불리는 기간과, 은퇴 후 매달 꺼내 쓰는 기간을 함께 시뮬레이션합니다.</p>
+
+<div class="phase-title">1단계 · 적립(거치) 기간</div>
+<div class="controls">
+  <div class="control-card">
+    <div class="control-label">월 적립액</div>
+    <div class="control-value" id="monthlyVal">500,000원</div>
+    <input type="range" id="monthly" min="0" max="10000000" step="10000" value="500000">
+    <div class="range-bounds"><span>0원</span><span>1,000만원</span></div>
+  </div>
+  <div class="control-card">
+    <div class="control-label">초기 거치 금액 (선택)</div>
+    <div class="control-value" id="lumpVal">0원</div>
+    <input type="range" id="lump" min="0" max="10000000000" step="1000000" value="0">
+    <div class="range-bounds"><span>0원</span><span>100억원</span></div>
+  </div>
+  <div class="control-card">
+    <div class="control-label">연평균 복리 수익률</div>
+    <div class="control-value" id="returnVal">10%</div>
+    <input type="range" id="returnRate" min="1" max="100" step="1" value="10">
+    <div class="range-bounds"><span>1%</span><span>100%</span></div>
+  </div>
+  <div class="control-card">
+    <div class="control-label">적립 기간</div>
+    <div class="control-value" id="accumVal">20년</div>
+    <div class="quick-select">
+      <button class="quick-btn" data-years="5">5년</button>
+      <button class="quick-btn" data-years="10">10년</button>
+      <button class="quick-btn" data-years="20">20년</button>
+      <button class="quick-btn" data-years="30">30년</button>
+    </div>
+    <input type="range" id="accumYears" min="1" max="100" step="1" value="20">
+    <div class="range-bounds"><span>1년</span><span>100년</span></div>
+  </div>
+</div>
+
+<div class="phase-title">2단계 · 은퇴 후 인출 기간</div>
+<div class="controls">
+  <div class="control-card">
+    <div class="control-label">월 인출액 (연금처럼 꺼내 쓰는 돈)</div>
+    <div class="control-value" id="withdrawVal">2,000,000원</div>
+    <input type="range" id="withdraw" min="1000000" max="100000000" step="100000" value="2000000">
+    <div class="range-bounds"><span>100만원</span><span>1억원</span></div>
+  </div>
+  <div class="control-card">
+    <div class="control-label">인출 기간 중 연평균 수익률</div>
+    <div class="control-value" id="withdrawReturnVal">6%</div>
+    <input type="range" id="withdrawReturn" min="0" max="100" step="1" value="6">
+    <div class="range-bounds"><span>0%</span><span>100%</span></div>
+  </div>
+</div>
+
+<div class="result-card" id="mainResult">
+  <div class="result-label">은퇴 시점(적립 종료) 평가 금액</div>
+  <div class="result-amount" id="retireAmount">-</div>
+  <div class="result-sub" id="retireSub">-</div>
+</div>
+
+<div class="result-card" id="sustainResult">
+  <div class="result-label">인출 시뮬레이션 결과</div>
+  <div class="result-amount" id="sustainAmount">-</div>
+  <div class="result-sub" id="sustainSub">-</div>
+</div>
+
+<div class="breakdown" id="breakdownCards"></div>
+
+<div class="chart-wrap">
+  <div class="legend">
+    <div><span class="dot" style="background:#3ecf8e"></span>적립 기간 (자산 증가)</div>
+    <div><span class="dot" style="background:#7c6cf5"></span>인출 기간 (자산 변화)</div>
+  </div>
+  <svg id="chart" viewBox="0 0 900 360" width="100%" height="360"></svg>
+</div>
+
+<div class="note">
+  ※ 적립 기간은 월 복리로 계산하며, 매달 적립액이 일정하다고 가정합니다. 인출 기간에는 매달 말 수익률이 적용된 뒤 인출액을 차감하는 방식으로 시뮬레이션합니다.
+  인출 기간 수익률이 낮게(또는 0으로) 설정된 경우 자산이 빠르게 줄어들 수 있고, 월 인출액보다 자산 성장이 크면 "고갈되지 않음(경제적 자유 달성)"으로 표시됩니다.
+  실제 결과는 세금, 수수료, 시장 변동성에 따라 달라질 수 있는 단순화된 추정 모델입니다.
+</div>
+
+<script>
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+const toEok = n => {
+  const sign = n < 0 ? '-' : '';
+  n = Math.abs(n);
+  const eok = Math.floor(n / 100000000);
+  const man = Math.round((n % 100000000) / 10000);
+  if(eok > 0 && man > 0) return `${sign}${eok}억 ${man.toLocaleString('ko-KR')}만원`;
+  if(eok > 0) return `${sign}${eok}억원`;
+  return `${sign}${man.toLocaleString('ko-KR')}만원`;
+};
+
+function simulateAccumulation(monthly, lump, annualRate, years){
+  const months = years * 12;
+  const r = annualRate / 100 / 12;
+  const series = [lump];
+  let balance = lump;
+  for(let m=1; m<=months; m++){
+    balance = balance * (1+r) + monthly;
+    series.push(balance);
+  }
+  return { finalBalance: balance, series };
+}
+
+function simulateWithdrawal(startBalance, monthlyWithdraw, annualRate, maxMonths){
+  const r = annualRate / 100 / 12;
+  let balance = startBalance;
+  const series = [balance];
+  let depletedAt = null;
+  for(let m=1; m<=maxMonths; m++){
+    balance = balance * (1+r) - monthlyWithdraw;
+    if(balance <= 0){
+      balance = 0;
+      series.push(balance);
+      depletedAt = m;
+      break;
+    }
+    series.push(balance);
+  }
+  return { series, depletedAt, endBalance: balance };
+}
+
+function calc(){
+  const monthly = +document.getElementById('monthly').value;
+  const lump = +document.getElementById('lump').value;
+  const rate = +document.getElementById('returnRate').value;
+  const accumYears = +document.getElementById('accumYears').value;
+  const withdraw = +document.getElementById('withdraw').value;
+  const withdrawRate = +document.getElementById('withdrawReturn').value;
+
+  const accum = simulateAccumulation(monthly, lump, rate, accumYears);
+  const principal = lump + monthly * 12 * accumYears;
+
+  const maxWithdrawMonths = 100 * 12;
+  const withdrawSim = simulateWithdrawal(accum.finalBalance, withdraw, withdrawRate, maxWithdrawMonths);
+
+  return { monthly, lump, rate, accumYears, withdraw, withdrawRate, principal, accum, withdrawSim };
+}
+
+function render(){
+  const d = calc();
+
+  document.getElementById('monthlyVal').textContent = fmt(d.monthly) + '원';
+  document.getElementById('lumpVal').textContent = fmt(d.lump) + '원';
+  document.getElementById('returnVal').textContent = d.rate + '%';
+  document.getElementById('accumVal').textContent = d.accumYears + '년';
+  document.getElementById('withdrawVal').textContent = fmt(d.withdraw) + '원';
+  document.getElementById('withdrawReturnVal').textContent = d.withdrawRate + '%';
+
+  document.querySelectorAll('.quick-btn').forEach(btn=>{
+    btn.classList.toggle('active', +btn.dataset.years === d.accumYears);
+  });
+
+  document.getElementById('retireAmount').textContent = toEok(d.accum.finalBalance);
+  document.getElementById('retireSub').textContent =
+    `총 납입(원금) ${toEok(d.principal)} · ${d.accumYears}년간 적립 후 평가액`;
+
+  const sustainResultEl = document.getElementById('sustainResult');
+  const sustainAmountEl = document.getElementById('sustainAmount');
+  const sustainSubEl = document.getElementById('sustainSub');
+
+  if(d.withdrawSim.depletedAt === null){
+    sustainResultEl.classList.remove('warn');
+    sustainAmountEl.classList.remove('warn');
+    sustainAmountEl.textContent = '고갈되지 않음 (경제적 자유 달성)';
+    sustainSubEl.textContent =
+      `월 ${fmt(d.withdraw)}원씩 100년 이상 인출해도 자산이 줄지 않거나 계속 유지됨 (100년 후 잔액 ${toEok(d.withdrawSim.endBalance)})`;
+  } else {
+    const dYears = Math.floor(d.withdrawSim.depletedAt / 12);
+    const dMonths = d.withdrawSim.depletedAt % 12;
+    sustainResultEl.classList.add('warn');
+    sustainAmountEl.classList.add('warn');
+    sustainAmountEl.textContent = `${dYears}년 ${dMonths}개월 후 고갈`;
+    sustainSubEl.textContent =
+      `월 ${fmt(d.withdraw)}원씩 인출 시, 은퇴 후 ${dYears}년 ${dMonths}개월이 지나면 자산이 0원이 됩니다`;
+  }
+
+  const totalWithdrawn = d.withdraw * (d.withdrawSim.depletedAt ?? d.withdrawSim.series.length-1);
+
+  document.getElementById('breakdownCards').innerHTML = `
+    <div class="breakdown-card">
+      <div class="label">총 납입(원금)</div>
+      <div class="value">${toEok(d.principal)}</div>
+    </div>
+    <div class="breakdown-card">
+      <div class="label">은퇴 시점 평가액</div>
+      <div class="value green">${toEok(d.accum.finalBalance)}</div>
+    </div>
+    <div class="breakdown-card">
+      <div class="label">적립 기간 총 수익</div>
+      <div class="value purple">${toEok(d.accum.finalBalance - d.principal)}</div>
+    </div>
+    <div class="breakdown-card">
+      <div class="label">누적 인출 총액 (고갈 시점까지)</div>
+      <div class="value blue">${toEok(totalWithdrawn)}</div>
+    </div>
+  `;
+
+  drawChart(d);
+}
+
+function drawChart(d){
+  const svg = document.getElementById('chart');
+  const W = 900, H = 360, padBottom = 40, padTop = 20, padLeft = 70;
+  const chartH = H - padBottom - padTop;
+  const chartW = W - padLeft - 20;
+
+  const accumSeries = d.accum.series;
+  const withdrawSeries = d.withdrawSim.series;
+  const accumMonths = accumSeries.length - 1;
+  const withdrawMonths = withdrawSeries.length - 1;
+  const totalMonths = accumMonths + withdrawMonths;
+
+  const allVals = [...accumSeries, ...withdrawSeries];
+  const maxVal = Math.max(...allVals) * 1.05 || 1;
+
+  function buildPath(series, offsetMonths, stride){
+    let path = '';
+    series.forEach((v, i)=>{
+      if(i % stride !== 0 && i !== series.length-1) return;
+      const m = offsetMonths + i;
+      const x = padLeft + (m / totalMonths) * chartW;
+      const y = padTop + chartH - (v / maxVal) * chartH;
+      path += (path === '' ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+    });
+    return path;
+  }
+
+  const accumStride = Math.max(1, Math.floor(accumSeries.length / 200));
+  const withdrawStride = Math.max(1, Math.floor(withdrawSeries.length / 200));
+
+  let svgContent = '';
+  svgContent += `<path d="${buildPath(accumSeries, 0, accumStride)}" fill="none" stroke="#3ecf8e" stroke-width="3"/>`;
+  svgContent += `<path d="${buildPath(withdrawSeries, accumMonths, withdrawStride)}" fill="none" stroke="#7c6cf5" stroke-width="3"/>`;
+
+  const dividerX = padLeft + (accumMonths/totalMonths)*chartW;
+  svgContent += `<line x1="${dividerX}" y1="${padTop}" x2="${dividerX}" y2="${padTop+chartH}" stroke="#444" stroke-width="1" stroke-dasharray="4 4"/>`;
+  svgContent += `<text x="${dividerX}" y="${padTop-6}" text-anchor="middle">은퇴 시점</text>`;
+
+  const steps = 5;
+  for(let i=0;i<=steps;i++){
+    const val = maxVal * i / steps;
+    const y = padTop + chartH - (val/maxVal)*chartH;
+    svgContent += `<text x="5" y="${y+4}" text-anchor="start">${toEok(val)}</text>`;
+    svgContent += `<line x1="${padLeft}" y1="${y}" x2="${W-10}" y2="${y}" stroke="#2a2b2f" stroke-width="1"/>`;
+  }
+  svgContent += `<text x="${padLeft}" y="${H-15}" text-anchor="start">0년</text>`;
+  svgContent += `<text x="${W-10}" y="${H-15}" text-anchor="end">${(totalMonths/12).toFixed(1)}년</text>`;
+
+  svg.innerHTML = svgContent;
+}
+
+['monthly','lump','returnRate','accumYears','withdraw','withdrawReturn'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', render);
+});
+
+document.querySelectorAll('.quick-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.getElementById('accumYears').value = btn.dataset.years;
+    render();
+  });
+});
+
+render();
+</script>
+</body>
+</html>
