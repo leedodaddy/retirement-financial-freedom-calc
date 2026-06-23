@@ -651,10 +651,13 @@ function calc(){
   const isaStart = Math.max(isaAccum.finalBalance - isaTax, 0);
   const isaContributionCapped = isaLimitOn && isaAccum.totalContributed < principal - 1;
 
-  // ---- 연금저축펀드 ----
+  // ---- 연금저축펀드 (세액공제 연 600만원 한도) ----
   const annualContribution = monthly * 12;
   const eligibleAnnual = Math.min(annualContribution, 6000000);
-  const creditRefund = eligibleAnnual * Math.max(accumYears,1) * (accumYears>0?1:0) * 0.15;
+  const excessAnnual = Math.max(annualContribution - eligibleAnnual, 0);
+  const eligibleTotal = eligibleAnnual * accumYears;
+  const excessTotal = excessAnnual * accumYears;
+  const creditRefund = eligibleTotal * 0.15;
   const pensionStart = accum.finalBalance;
   const pensionTaxRate = 0.044;
 
@@ -674,7 +677,10 @@ function calc(){
       tax:isaTax, start:isaStart, sim:isaSim, accum:isaAccum,
       principal:isaPrincipal, gain:isaGain, limitOn:isaLimitOn, contributionCapped:isaContributionCapped
     },
-    pension:{ creditRefund, start:pensionStart, sim:pensionSim, taxRate:pensionTaxRate }
+    pension:{
+      creditRefund, start:pensionStart, sim:pensionSim, taxRate:pensionTaxRate,
+      eligibleAnnual, excessAnnual, eligibleTotal, excessTotal
+    }
   };
 }
 
@@ -764,6 +770,8 @@ function render(){
 
     <div class="account-card border-purple">
       <div class="badge purple">연금저축펀드</div>
+      <div class="row"><span class="label">세액공제 인정 납입액(한도 적용, 연 600만원 · 누적)</span><span class="val">${toEok(d.pension.eligibleTotal)}</span></div>
+      ${d.pension.excessTotal > 0 ? `<div class="row"><span class="label" style="color:var(--red)">⚠ 한도 초과로 세액공제 못 받는 누적 납입액</span><span class="val red">${toEok(d.pension.excessTotal)}</span></div>` : ''}
       <div class="row"><span class="label">은퇴 시점 평가액(세전)</span><span class="val">${toEok(d.accum.finalBalance)}</span></div>
       <div class="row"><span class="label">적립기간 세액공제 환급(15%)</span><span class="val purple">+${toEok(d.pension.creditRefund)}</span></div>
       <div class="divider"></div>
