@@ -182,6 +182,29 @@
     display:inline-block;
     width:10px;height:10px;border-radius:2px;margin-right:6px;
   }
+  .legend-toggle{
+    display:flex;
+    align-items:center;
+    cursor:pointer;
+    user-select:none;
+  }
+  .legend-toggle input[type=checkbox]{
+    margin-right:6px;
+    accent-color:#fff;
+    cursor:pointer;
+  }
+  .range-select{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:16px;
+    flex-wrap:wrap;
+  }
+  .range-select-label{
+    color:var(--muted);
+    font-size:13px;
+    margin-right:4px;
+  }
   svg text{ fill:var(--muted); font-size:11px; }
 
   .account-cards{
@@ -402,12 +425,23 @@
 
 <div class="chart-wrap">
   <div class="legend">
-    <div><span class="dot" style="background:#3ecf8e"></span>적립 기간 (자산 증가, 세전)</div>
-    <div><span class="dot" style="background:#b6b6b6"></span>인출-일반계좌</div>
-    <div><span class="dot" style="background:#3ecf8e"></span>인출-ISA</div>
-    <div><span class="dot" style="background:#7c6cf5"></span>인출-연금저축펀드</div>
+    <label class="legend-toggle"><input type="checkbox" id="showAccum" checked><span class="dot" style="background:#3ecf8e"></span>적립 기간 (자산 증가, 세전)</label>
+    <label class="legend-toggle"><input type="checkbox" id="showGeneral" checked><span class="dot" style="background:#b6b6b6"></span>인출-일반계좌</label>
+    <label class="legend-toggle"><input type="checkbox" id="showIsa" checked><span class="dot" style="background:#3ecf8e"></span>인출-ISA</label>
+    <label class="legend-toggle"><input type="checkbox" id="showPension" checked><span class="dot" style="background:#7c6cf5"></span>인출-연금저축펀드</label>
   </div>
   <svg id="chart" viewBox="0 0 900 600" width="100%" height="600"></svg>
+  <div class="range-select">
+    <span class="range-select-label">표시 기간</span>
+    <button class="quick-btn range-btn" data-range="1">1년</button>
+    <button class="quick-btn range-btn" data-range="3">3년</button>
+    <button class="quick-btn range-btn" data-range="5">5년</button>
+    <button class="quick-btn range-btn" data-range="10">10년</button>
+    <button class="quick-btn range-btn" data-range="20">20년</button>
+    <button class="quick-btn range-btn" data-range="30">30년</button>
+    <button class="quick-btn range-btn" data-range="50">50년</button>
+    <button class="quick-btn range-btn active" data-range="100">100년</button>
+  </div>
 </div>
 
 <div class="phase-title">계좌 유형별 비교 (세후)</div>
@@ -685,7 +719,7 @@ function render(){
     monthly: d.monthly, lump: d.lump, returnRate: d.rate,
     accumYears: d.accumYears, withdraw: d.withdraw, withdrawReturn: d.withdrawRate
   };
-  document.querySelectorAll('.quick-btn').forEach(btn=>{
+  document.querySelectorAll('.quick-btn:not(.range-btn)').forEach(btn=>{
     btn.classList.toggle('active', +btn.dataset.value === currentValues[btn.dataset.target]);
   });
 
@@ -783,23 +817,51 @@ function generateLogTicks(floorVal, maxVal){
   return ticks;
 }
 
+let chartRangeYears = 100;
+
 function drawChart(d){
   const svg = document.getElementById('chart');
   const W = 900, H = 600, padBottom = 56, padTop = 26, padLeft = 90;
   const chartH = H - padBottom - padTop;
   const chartW = W - padLeft - 20;
 
+  const visibility = {
+    accum: document.getElementById('showAccum').checked,
+    general: document.getElementById('showGeneral').checked,
+    isa: document.getElementById('showIsa').checked,
+    pension: document.getElementById('showPension').checked
+  };
+
   const accumSeries = d.accum.series;
   const accumMonths = accumSeries.length - 1;
 
-  const series3 = [d.general.sim.series, d.isa.sim.series, d.pension.sim.series];
-  const colors3 = ['#b6b6b6', '#3ecf8e', '#7c6cf5'];
-  const withdrawMonthsMax = Math.max(...series3.map(s=>s.length-1));
-  const totalMonths = accumMonths + withdrawMonthsMax;
+  const allSeries = [
+    { key:'accum', series: accumSeries, offset: 0, color: '#3ecf8e', width: 3 },
+    { key:'general', series: d.general.sim.series, offset: accumMonths, color: '#b6b6b6', width: 2.5 },
+    { key:'isa', series: d.isa.sim.series, offset: accumMonths, color: '#3ecf8e', width: 2.5 },
+    { key:'pension', series: d.pension.sim.series, offset: accumMonths, color: '#7c6cf5', width: 2.5 }
+  ];
 
-  const allVals = [...accumSeries, ...series3.flat()].filter(v => v > 0);
-  const maxVal = Math.max(...allVals, 1) * 1.2;
-  const floorVal = Math.min(10000000, Math.max(...allVals.filter(v=>v>0), 1));
+  const withdrawMonthsMax = Math.max(d.general.sim.series.length-1, d.isa.sim.series.length-1, d.pension.sim.series.length-1);
+  const fullTotalMonths = accumMonths + withdrawMonthsMax;
+
+  const totalMonths = Math.min(chartRangeYears * 12, fullTotalMonths) || 1;
+
+  // 표시 구간(totalMonths)에 해당하는 값만 잘라서 스케일을 계산 -> 짧은 기간을 선택하면 눈금이 더 세밀해짐
+  function clipSeries(item){
+    const relEnd = totalMonths - item.offset;
+    if(relEnd < 0) return [];
+    return item.series.slice(0, Math.min(item.series.length, Math.floor(relEnd) + 1));
+  }
+
+  const visibleVals = [];
+  allSeries.forEach(item=>{
+    if(!visibility[item.key]) return;
+    clipSeries(item).forEach(v=>{ if(v>0) visibleVals.push(v); });
+  });
+
+  const maxVal = Math.max(...visibleVals, 1) * 1.2;
+  const floorVal = Math.min(10000000, Math.max(...visibleVals.filter(v=>v>0), 1));
 
   function valToY(v){
     const clamped = Math.max(v, floorVal);
@@ -813,8 +875,9 @@ function drawChart(d){
   function buildPath(series, offsetMonths, stride){
     let path = '';
     series.forEach((v, i)=>{
-      if(i % stride !== 0 && i !== series.length-1) return;
       const m = offsetMonths + i;
+      if(m > totalMonths) return;
+      if(i % stride !== 0 && i !== series.length-1 && m !== totalMonths) return;
       const x = padLeft + (m / totalMonths) * chartW;
       const y = valToY(v);
       path += (path === '' ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
@@ -822,13 +885,13 @@ function drawChart(d){
     return path;
   }
 
-  const accumStride = Math.max(1, Math.floor(accumSeries.length / 300));
-
   let svgContent = '';
-  svgContent += `<path d="${buildPath(accumSeries, 0, accumStride)}" fill="none" stroke="#3ecf8e" stroke-width="3"/>`;
-  series3.forEach((s, idx)=>{
-    const stride = Math.max(1, Math.floor(s.length / 300));
-    svgContent += `<path d="${buildPath(s, accumMonths, stride)}" fill="none" stroke="${colors3[idx]}" stroke-width="2.5"/>`;
+  allSeries.forEach(item=>{
+    if(!visibility[item.key]) return;
+    const clipped = clipSeries(item);
+    if(clipped.length === 0) return;
+    const stride = Math.max(1, Math.floor(clipped.length / 300));
+    svgContent += `<path d="${buildPath(clipped, item.offset, stride)}" fill="none" stroke="${item.color}" stroke-width="${item.width}"/>`;
   });
 
   const currentYear = new Date().getFullYear();
@@ -836,9 +899,11 @@ function drawChart(d){
   const retireYear = currentYear + retireYearsFromNow;
   const retireAge = d.age + retireYearsFromNow;
 
-  const dividerX = padLeft + (accumMonths/totalMonths)*chartW;
-  svgContent += `<line x1="${dividerX}" y1="${padTop}" x2="${dividerX}" y2="${padTop+chartH}" stroke="#444" stroke-width="1" stroke-dasharray="4 4"/>`;
-  svgContent += `<text x="${dividerX}" y="${padTop-8}" text-anchor="middle">은퇴 시점 (${retireYear}년, 만 ${retireAge}세)</text>`;
+  if(accumMonths <= totalMonths){
+    const dividerX = padLeft + (accumMonths/totalMonths)*chartW;
+    svgContent += `<line x1="${dividerX}" y1="${padTop}" x2="${dividerX}" y2="${padTop+chartH}" stroke="#444" stroke-width="1" stroke-dasharray="4 4"/>`;
+    svgContent += `<text x="${dividerX}" y="${padTop-8}" text-anchor="middle">은퇴 시점 (${retireYear}년, 만 ${retireAge}세)</text>`;
+  }
 
   const yTicks = generateLogTicks(floorVal, maxVal);
   yTicks.forEach(val=>{
@@ -851,9 +916,9 @@ function drawChart(d){
   for(let i=0;i<=xTicks;i++){
     const m = Math.round(totalMonths * i / xTicks);
     const x = padLeft + (m/totalMonths)*chartW;
-    const yearsFromNow = Math.round(m/12);
-    const yearLabel = currentYear + yearsFromNow;
-    const ageLabel = d.age + yearsFromNow;
+    const yearsFromNow = m/12;
+    const yearLabel = currentYear + Math.round(yearsFromNow);
+    const ageLabel = d.age + Math.round(yearsFromNow);
     const anchor = i===0 ? 'start' : (i===xTicks ? 'end' : 'middle');
     svgContent += `<text x="${x}" y="${H-32}" text-anchor="${anchor}">${yearLabel}년</text>`;
     svgContent += `<text x="${x}" y="${H-16}" text-anchor="${anchor}">(만 ${ageLabel}세)</text>`;
@@ -901,13 +966,25 @@ bindPair('accumYears','accumYearsInput');
 bindPair('withdraw','withdrawInput');
 bindPair('withdrawReturn','withdrawReturnInput');
 
-document.querySelectorAll('.quick-btn').forEach(btn=>{
+document.querySelectorAll('.quick-btn:not(.range-btn)').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     const target = btn.dataset.target;
     document.getElementById(target).value = btn.dataset.value;
     document.getElementById(target + 'Input').value = btn.dataset.value;
     render();
   });
+});
+
+document.querySelectorAll('.range-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    chartRangeYears = +btn.dataset.range;
+    document.querySelectorAll('.range-btn').forEach(b=>b.classList.toggle('active', b===btn));
+    render();
+  });
+});
+
+['showAccum','showGeneral','showIsa','showPension'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', render);
 });
 
 render();
