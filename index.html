@@ -409,6 +409,10 @@
 </div>
 
 <div class="phase-title">계좌 유형별 비교 (세후)</div>
+<div class="control-card" style="margin-bottom:16px; display:flex; align-items:center; gap:10px;">
+  <input type="checkbox" id="isaLimitToggle" checked style="width:18px; height:18px;">
+  <label for="isaLimitToggle" style="font-size:13px;">ISA 납입 한도 적용 (연 2,000만원 · 누적 1억원) — 끄면 한도 없이 전액 ISA에 적립한다고 가정</label>
+</div>
 <div class="account-cards" id="accountCards"></div>
 
 <div class="phase-title">월 인출액 기준 시점별 잔액 스냅샷</div>
@@ -428,6 +432,8 @@
   <br><br>
   <strong>인출 기간 중에도 매년 발생하는 수익에 계속 세금이 부과됩니다.</strong> 일반계좌·ISA는 은퇴 시점 일괄 과세 이후에도, 인출 기간 동안 매년 그 해에 늘어난 수익(추정치)에 대해 각각 배당소득세 15.4%+양도소득세 22%(연 250만원 공제), 9.9% 분리과세(연 200만원 비과세)를 계속 적용해 잔액에서 차감합니다.
   실제로는 매도 시점·보유 기간·ISA 비과세 한도가 계좌 생애 전체에 한 번만 적용되는 등 세부 규칙이 더 복잡하지만, 이 계산기는 "매년 발생한 수익에는 매년 같은 세율이 계속 적용된다"고 가정한 근사 모델입니다. 연금저축펀드는 원래부터 매월 인출액에 연금소득세가 붙는 구조라 별도 처리가 필요 없습니다.
+  <br><br>
+  <strong>ISA 계좌는 실제 납입 한도(연 2,000만원, 누적 1억원)를 적용할 수 있습니다.</strong> 토글을 켜면 한도를 넘는 적립액(초기 거치금액·월 적립액)은 ISA에 들어가지 못한다고 가정해 그만큼 적게 성장합니다(한도 초과분이 실제로 어디로 가는지는 계산하지 않습니다). 토글을 끄면 한도 없이 전액 ISA에 들어간다고 가정한 이론적 비교가 됩니다.
   실제 세법, 한도, 개인 소득 구간, 수수료, 시장 변동성에 따라 결과는 달라질 수 있으니 투자/세무 결정 시 전문가와 상담하세요.
 </div>
 
@@ -468,7 +474,36 @@ function simulateAccumulation(monthly, lump, annualRate, years){
     balance = balance * (1+r) + monthly;
     series.push(balance);
   }
-  return { finalBalance: balance, series };
+  return { finalBalance: balance, series, totalContributed: lump + monthly * months };
+}
+
+const ISA_ANNUAL_LIMIT = 20000000;
+const ISA_LIFETIME_LIMIT = 100000000;
+
+// ISA는 연 2,000만원 / 누적 1억원까지만 납입 가능. 한도를 넘는 금액은 ISA에 들어가지 못한다고 가정(그만큼 성장에서 제외).
+function simulateAccumulationISA(monthly, lump, annualRate, years, annualLimit, lifetimeLimit){
+  const r = annualRate / 100 / 12;
+  let lifetimeRemaining = lifetimeLimit;
+  let yearRemaining = annualLimit;
+
+  const lumpInvested = Math.max(0, Math.min(lump, yearRemaining, lifetimeRemaining));
+  let balance = lumpInvested;
+  yearRemaining -= lumpInvested;
+  lifetimeRemaining -= lumpInvested;
+  let totalContributed = lumpInvested;
+  const series = [balance];
+
+  const months = years * 12;
+  for(let m = 1; m <= months; m++){
+    if((m - 1) % 12 === 0) yearRemaining = annualLimit;
+    const contribution = Math.max(0, Math.min(monthly, yearRemaining, lifetimeRemaining));
+    balance = balance * (1+r) + contribution;
+    yearRemaining -= contribution;
+    lifetimeRemaining -= contribution;
+    totalContributed += contribution;
+    series.push(balance);
+  }
+  return { finalBalance: balance, series, totalContributed };
 }
 
 // general/isa: liquidation tax applied once, then no further tax on withdrawal
@@ -568,10 +603,17 @@ function calc(){
   const generalStart = Math.max(accum.finalBalance - generalTax, 0);
 
   // ---- ISA ----
+  const isaLimitOn = document.getElementById('isaLimitToggle').checked;
+  const isaAccum = isaLimitOn
+    ? simulateAccumulationISA(monthly, lump, rate, accumYears, ISA_ANNUAL_LIMIT, ISA_LIFETIME_LIMIT)
+    : accum;
+  const isaPrincipal = isaLimitOn ? isaAccum.totalContributed : principal;
+  const isaGain = isaAccum.finalBalance - isaPrincipal;
   const isaExemption = 2000000;
-  const isaTaxableGain = Math.max(gain - isaExemption, 0);
+  const isaTaxableGain = Math.max(isaGain - isaExemption, 0);
   const isaTax = isaTaxableGain * 0.099;
-  const isaStart = Math.max(accum.finalBalance - isaTax, 0);
+  const isaStart = Math.max(isaAccum.finalBalance - isaTax, 0);
+  const isaContributionCapped = isaLimitOn && isaAccum.totalContributed < principal - 1;
 
   // ---- 연금저축펀드 ----
   const annualContribution = monthly * 12;
@@ -592,7 +634,10 @@ function calc(){
   return {
     age, monthly, lump, rate, accumYears, withdraw, withdrawRate, principal, gain, accum,
     general:{ dividendTax, capitalGainTax, tax:generalTax, start:generalStart, sim:generalSim },
-    isa:{ tax:isaTax, start:isaStart, sim:isaSim },
+    isa:{
+      tax:isaTax, start:isaStart, sim:isaSim, accum:isaAccum,
+      principal:isaPrincipal, gain:isaGain, limitOn:isaLimitOn, contributionCapped:isaContributionCapped
+    },
     pension:{ creditRefund, start:pensionStart, sim:pensionSim, taxRate:pensionTaxRate }
   };
 }
@@ -669,7 +714,9 @@ function render(){
 
     <div class="account-card highlight">
       <div class="badge green">ISA 계좌 (중개형)</div>
-      <div class="row"><span class="label">은퇴 시점 평가액(세전)</span><span class="val">${toEok(d.accum.finalBalance)}</span></div>
+      ${d.isa.limitOn ? `<div class="row"><span class="label">ISA 납입 인정액(한도 적용, 누적)</span><span class="val">${toEok(d.isa.principal)}</span></div>` : ''}
+      ${d.isa.limitOn && d.isa.contributionCapped ? `<div class="row"><span class="label red" style="color:var(--red)">⚠ 한도 초과로 ISA에 못 들어간 금액</span><span class="val red">${toEok(d.principal - d.isa.principal)}</span></div>` : ''}
+      <div class="row"><span class="label">은퇴 시점 평가액(세전)</span><span class="val">${toEok(d.isa.accum.finalBalance)}</span></div>
       <div class="row"><span class="label">분리과세(9.9%, 200만원 비과세, 은퇴 시점 일괄)</span><span class="val red">-${toEok(d.isa.tax)}</span></div>
       <div class="divider"></div>
       <div class="row"><span class="label">인출 시작 금액(세후)</span><span class="val">${toEok(d.isa.start)}</span></div>
@@ -843,6 +890,7 @@ function bindPair(rangeId, inputId){
   });
 }
 
+document.getElementById('isaLimitToggle').addEventListener('change', render);
 bindPair('age','ageInput');
 bindPair('monthly','monthlyInput');
 bindPair('lump','lumpInput');
