@@ -276,7 +276,7 @@
     <div class="range-bounds"><span>0원</span><span>1,000만원</span></div>
     <div class="direct-input">
       <label>직접입력</label>
-      <input type="number" id="monthlyInput" value="500000" step="10000">
+      <input type="text" inputmode="numeric" id="monthlyInput" value="500000">
     </div>
   </div>
   <div class="control-card">
@@ -286,7 +286,7 @@
     <div class="range-bounds"><span>0원</span><span>100억원</span></div>
     <div class="direct-input">
       <label>직접입력</label>
-      <input type="number" id="lumpInput" value="0" step="1000000">
+      <input type="text" inputmode="numeric" id="lumpInput" value="0">
     </div>
   </div>
   <div class="control-card">
@@ -296,7 +296,7 @@
     <div class="range-bounds"><span>1%</span><span>100%</span></div>
     <div class="direct-input">
       <label>직접입력(%)</label>
-      <input type="number" id="returnRateInput" value="10" step="1">
+      <input type="text" inputmode="numeric" id="returnRateInput" value="10">
     </div>
   </div>
   <div class="control-card">
@@ -313,7 +313,7 @@
     <div class="range-bounds"><span>0년</span><span>100년</span></div>
     <div class="direct-input">
       <label>직접입력(년)</label>
-      <input type="number" id="accumYearsInput" value="20" step="1">
+      <input type="text" inputmode="numeric" id="accumYearsInput" value="20">
     </div>
   </div>
 </div>
@@ -327,7 +327,7 @@
     <div class="range-bounds"><span>100만원</span><span>1억원</span></div>
     <div class="direct-input">
       <label>직접입력</label>
-      <input type="number" id="withdrawInput" value="2000000" step="100000">
+      <input type="text" inputmode="numeric" id="withdrawInput" value="2000000">
     </div>
   </div>
   <div class="control-card">
@@ -337,7 +337,7 @@
     <div class="range-bounds"><span>0%</span><span>100%</span></div>
     <div class="direct-input">
       <label>직접입력(%)</label>
-      <input type="number" id="withdrawReturnInput" value="6" step="1">
+      <input type="text" inputmode="numeric" id="withdrawReturnInput" value="6">
     </div>
   </div>
 </div>
@@ -511,12 +511,16 @@ function render(){
   document.getElementById('withdrawVal').textContent = fmt(d.withdraw) + '원';
   document.getElementById('withdrawReturnVal').textContent = d.withdrawRate + '%';
 
-  document.getElementById('monthlyInput').value = d.monthly;
-  document.getElementById('lumpInput').value = d.lump;
-  document.getElementById('returnRateInput').value = d.rate;
-  document.getElementById('accumYearsInput').value = d.accumYears;
-  document.getElementById('withdrawInput').value = d.withdraw;
-  document.getElementById('withdrawReturnInput').value = d.withdrawRate;
+  const syncIfNotFocused = (id, val) => {
+    const el = document.getElementById(id);
+    if(document.activeElement !== el) el.value = val;
+  };
+  syncIfNotFocused('monthlyInput', d.monthly);
+  syncIfNotFocused('lumpInput', d.lump);
+  syncIfNotFocused('returnRateInput', d.rate);
+  syncIfNotFocused('accumYearsInput', d.accumYears);
+  syncIfNotFocused('withdrawInput', d.withdraw);
+  syncIfNotFocused('withdrawReturnInput', d.withdrawRate);
 
   document.querySelectorAll('.quick-btn').forEach(btn=>{
     btn.classList.toggle('active', +btn.dataset.years === d.accumYears);
@@ -653,11 +657,22 @@ function bindPair(rangeId, inputId){
     render();
   });
   inputEl.addEventListener('input', ()=>{
+    const cleaned = inputEl.value.replace(/[^0-9]/g, '');
+    if(cleaned !== inputEl.value) inputEl.value = cleaned;
+    let v = +cleaned;
+    if(isNaN(v)) v = 0;
+    const max = +rangeEl.max;
+    if(v > max) v = max;
+    rangeEl.value = v;
+    render();
+  });
+  inputEl.addEventListener('blur', ()=>{
     let v = +inputEl.value;
     if(isNaN(v)) v = 0;
     const min = +rangeEl.min, max = +rangeEl.max;
     if(v < min) v = min;
     if(v > max) v = max;
+    inputEl.value = v;
     rangeEl.value = v;
     render();
   });
