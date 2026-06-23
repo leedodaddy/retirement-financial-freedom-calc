@@ -405,7 +405,7 @@
     <div><span class="dot" style="background:#3ecf8e"></span>인출-ISA</div>
     <div><span class="dot" style="background:#7c6cf5"></span>인출-연금저축펀드</div>
   </div>
-  <svg id="chart" viewBox="0 0 900 360" width="100%" height="360"></svg>
+  <svg id="chart" viewBox="0 0 900 600" width="100%" height="600"></svg>
 </div>
 
 <div class="phase-title">계좌 유형별 비교 (세후)</div>
@@ -424,6 +424,7 @@
   <br><br>
   계좌별 세후 비교는 단순화된 추정 모델입니다 — 일반계좌는 은퇴 시점에 배당소득세 15.4%(연 1.5% 배당 가정) + 양도소득세 22%(연 250만원 공제)를 한 번에 적용하고, ISA는 200만원 비과세 후 초과 수익에 9.9% 분리과세를 은퇴 시점에 한 번 적용합니다. 연금저축펀드는 적립 기간 중 연 600만원 한도까지 15% 세액공제 환급을 받습니다(별도 수령, 계좌 잔액에는 합산하지 않음).
   나이는 만 나이 기준으로 표시하며, 그래프와 표의 연도·나이는 현재 연도(자동 계산)를 기준으로 계산됩니다.
+  그래프 y축은 로그 스케일입니다 — 천만원대부터 조 단위까지 한 그래프에서 함께 보기 위함이며, 같은 간격이라도 실제 증가폭은 위로 갈수록 커집니다.
   실제 세법, 한도, 개인 소득 구간, 수수료, 시장 변동성에 따라 결과는 달라질 수 있으니 투자/세무 결정 시 전문가와 상담하세요.
 </div>
 
@@ -522,13 +523,15 @@ function calc(){
   const principal = lump + monthly * 12 * accumYears;
   const gain = accum.finalBalance - principal;
 
-  // ---- 일반계좌 ----
+  // ---- 일반계좌 (S&P500 ETF 등 미국주식 가정) ----
+  // 배당: 보유 기간 중 평균 평가액 기준 연 1.5% 배당 가정, 매년 발생 시점에 15.4% 과세(별도 현금 흐름, 양도차익과는 분리)
   const dividendYieldRate = 0.015;
-  const dividendBase = Math.min(accum.finalBalance * dividendYieldRate * Math.max(accumYears,1), Math.max(gain,0));
+  const avgBalance = (principal + accum.finalBalance) / 2;
+  const dividendBase = avgBalance * dividendYieldRate * Math.max(accumYears, 1);
   const dividendTax = dividendBase * 0.154;
-  const capitalGainBase = Math.max(gain - dividendBase, 0);
-  const annualExemption = 2500000 * Math.max(accumYears,1);
-  const taxableCapitalGain = Math.max(capitalGainBase - annualExemption, 0);
+  // 양도소득세: 매도 시점 전체 양도차익(가격 상승분) 기준, 연 250만원 공제
+  const annualExemption = 2500000 * Math.max(accumYears, 1);
+  const taxableCapitalGain = Math.max(gain - annualExemption, 0);
   const capitalGainTax = taxableCapitalGain * 0.22;
   const generalTax = dividendTax + capitalGainTax;
   const generalStart = Math.max(accum.finalBalance - generalTax, 0);
@@ -680,9 +683,23 @@ function render(){
   drawChart(d);
 }
 
+// 1-2-5 시퀀스로 보기 좋은 로그 눈금 생성 (예: 1천만, 2천만, 5천만, 1억, 2억, 5억, 10억 ...)
+function generateLogTicks(floorVal, maxVal){
+  const ticks = [];
+  const startExp = Math.floor(Math.log10(floorVal));
+  const endExp = Math.ceil(Math.log10(maxVal));
+  for(let exp = startExp; exp <= endExp; exp++){
+    for(const mult of [1, 2, 5]){
+      const v = mult * Math.pow(10, exp);
+      if(v >= floorVal * 0.999 && v <= maxVal * 1.001) ticks.push(v);
+    }
+  }
+  return ticks;
+}
+
 function drawChart(d){
   const svg = document.getElementById('chart');
-  const W = 900, H = 360, padBottom = 40, padTop = 20, padLeft = 70;
+  const W = 900, H = 600, padBottom = 56, padTop = 26, padLeft = 90;
   const chartH = H - padBottom - padTop;
   const chartW = W - padLeft - 20;
 
@@ -694,8 +711,18 @@ function drawChart(d){
   const withdrawMonthsMax = Math.max(...series3.map(s=>s.length-1));
   const totalMonths = accumMonths + withdrawMonthsMax;
 
-  const allVals = [...accumSeries, ...series3.flat()];
-  const maxVal = Math.max(...allVals) * 1.05 || 1;
+  const allVals = [...accumSeries, ...series3.flat()].filter(v => v > 0);
+  const maxVal = Math.max(...allVals, 1) * 1.2;
+  const floorVal = Math.min(10000000, Math.max(...allVals.filter(v=>v>0), 1));
+
+  function valToY(v){
+    const clamped = Math.max(v, floorVal);
+    const logV = Math.log10(clamped);
+    const logFloor = Math.log10(floorVal);
+    const logMax = Math.log10(maxVal);
+    const ratio = (logV - logFloor) / (logMax - logFloor || 1);
+    return padTop + chartH - ratio * chartH;
+  }
 
   function buildPath(series, offsetMonths, stride){
     let path = '';
@@ -703,18 +730,18 @@ function drawChart(d){
       if(i % stride !== 0 && i !== series.length-1) return;
       const m = offsetMonths + i;
       const x = padLeft + (m / totalMonths) * chartW;
-      const y = padTop + chartH - (v / maxVal) * chartH;
+      const y = valToY(v);
       path += (path === '' ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
     });
     return path;
   }
 
-  const accumStride = Math.max(1, Math.floor(accumSeries.length / 200));
+  const accumStride = Math.max(1, Math.floor(accumSeries.length / 300));
 
   let svgContent = '';
   svgContent += `<path d="${buildPath(accumSeries, 0, accumStride)}" fill="none" stroke="#3ecf8e" stroke-width="3"/>`;
   series3.forEach((s, idx)=>{
-    const stride = Math.max(1, Math.floor(s.length / 200));
+    const stride = Math.max(1, Math.floor(s.length / 300));
     svgContent += `<path d="${buildPath(s, accumMonths, stride)}" fill="none" stroke="${colors3[idx]}" stroke-width="2.5"/>`;
   });
 
@@ -725,15 +752,14 @@ function drawChart(d){
 
   const dividerX = padLeft + (accumMonths/totalMonths)*chartW;
   svgContent += `<line x1="${dividerX}" y1="${padTop}" x2="${dividerX}" y2="${padTop+chartH}" stroke="#444" stroke-width="1" stroke-dasharray="4 4"/>`;
-  svgContent += `<text x="${dividerX}" y="${padTop-6}" text-anchor="middle">은퇴 시점 (${retireYear}년, 만 ${retireAge}세)</text>`;
+  svgContent += `<text x="${dividerX}" y="${padTop-8}" text-anchor="middle">은퇴 시점 (${retireYear}년, 만 ${retireAge}세)</text>`;
 
-  const steps = 5;
-  for(let i=0;i<=steps;i++){
-    const val = maxVal * i / steps;
-    const y = padTop + chartH - (val/maxVal)*chartH;
+  const yTicks = generateLogTicks(floorVal, maxVal);
+  yTicks.forEach(val=>{
+    const y = valToY(val);
     svgContent += `<text x="5" y="${y+4}" text-anchor="start">${toEok(val)}</text>`;
     svgContent += `<line x1="${padLeft}" y1="${y}" x2="${W-10}" y2="${y}" stroke="#2a2b2f" stroke-width="1"/>`;
-  }
+  });
 
   const xTicks = 6;
   for(let i=0;i<=xTicks;i++){
@@ -743,8 +769,8 @@ function drawChart(d){
     const yearLabel = currentYear + yearsFromNow;
     const ageLabel = d.age + yearsFromNow;
     const anchor = i===0 ? 'start' : (i===xTicks ? 'end' : 'middle');
-    svgContent += `<text x="${x}" y="${H-25}" text-anchor="${anchor}">${yearLabel}년</text>`;
-    svgContent += `<text x="${x}" y="${H-11}" text-anchor="${anchor}">(만 ${ageLabel}세)</text>`;
+    svgContent += `<text x="${x}" y="${H-32}" text-anchor="${anchor}">${yearLabel}년</text>`;
+    svgContent += `<text x="${x}" y="${H-16}" text-anchor="${anchor}">(만 ${ageLabel}세)</text>`;
     svgContent += `<line x1="${x}" y1="${padTop}" x2="${x}" y2="${padTop+chartH}" stroke="#222428" stroke-width="1"/>`;
   }
 
