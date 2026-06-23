@@ -267,6 +267,20 @@
 <h1>이도대디의 노후대비와 경제적자유를 위한 계산기</h1>
 <p class="sub">매달 적립해서 자산을 불리는 기간과, 은퇴 후 매달 꺼내 쓰는 기간을 함께 시뮬레이션합니다. 일반계좌·ISA·연금저축펀드 세후 차이까지 비교합니다.</p>
 
+<div class="phase-title">현재 나이</div>
+<div class="controls">
+  <div class="control-card">
+    <div class="control-label">현재 나이 (만 나이)</div>
+    <div class="control-value" id="ageVal">35세</div>
+    <input type="range" id="age" min="0" max="100" step="1" value="35">
+    <div class="range-bounds"><span>0세</span><span>100세</span></div>
+    <div class="direct-input">
+      <label>직접입력(세)</label>
+      <input type="text" inputmode="numeric" id="ageInput" value="35">
+    </div>
+  </div>
+</div>
+
 <div class="phase-title">1단계 · 적립(거치) 기간</div>
 <div class="controls">
   <div class="control-card">
@@ -342,7 +356,7 @@
 <div class="phase-title">2단계 · 은퇴 후 인출 기간</div>
 <div class="controls">
   <div class="control-card">
-    <div class="control-label">월 인출액 (연금처럼 꺼내 쓰는 돈)</div>
+    <div class="control-label">월 인출액 (실수령·세후 기준, 연금처럼 꺼내 쓰는 돈)</div>
     <div class="control-value" id="withdrawVal">2,000,000원</div>
     <div class="quick-select">
       <button class="quick-btn" data-target="withdraw" data-value="0">0원</button>
@@ -404,8 +418,12 @@
 
 <div class="note">
   ※ 적립 기간은 월 복리로 계산하며, 매달 적립액이 일정하다고 가정합니다(0년으로 두면 거치금액만으로 바로 인출을 시작합니다). 인출 기간에는 매달 말 수익률이 적용된 뒤 인출액을 차감하는 방식으로 시뮬레이션합니다.
-  계좌별 세후 비교는 단순화된 추정 모델입니다 — 일반계좌는 은퇴 시점에 배당소득세 15.4%(연 1.5% 배당 가정) + 양도소득세 22%(연 250만원 공제)를 한 번에 적용해 순자산을 계산하고, 그 이후 인출 기간에는 추가 세금이 없다고 가정합니다.
-  ISA는 200만원 비과세 후 초과 수익에 9.9% 분리과세를 은퇴 시점에 한 번 적용합니다. 연금저축펀드는 적립 기간 중 연 600만원 한도까지 15% 세액공제 환급을 받고(별도 표시), 인출 시 매월 인출액에 평균 4.4%의 연금소득세를 적용합니다.
+  <br><br>
+  <strong>월 인출액은 항상 "실수령액(세후, 내 손에 들어오는 돈)" 기준으로 통일했습니다.</strong> 일반계좌·ISA는 은퇴 시점에 평가액 전체에 대해 세금을 한 번 떼고 시작하므로(인출 시작 금액=세후 금액), 그 이후 매달 인출하는 금액이 곧 실수령액과 같습니다.
+  반면 연금저축펀드는 은퇴 시점엔 세금이 없는 대신 매달 인출할 때마다 연금소득세(평균 4.4%)가 빠지는 구조라서, 사용자가 입력한 "월 인출액(실수령)"을 받기 위해 계좌에서는 그보다 더 많은 금액(세금 포함, 위 카드의 "월 계좌 차감액")이 빠져나갑니다. 그래서 같은 월 인출액을 입력해도 연금저축펀드 계좌는 실제로 조금 더 빨리 줄어듭니다.
+  <br><br>
+  계좌별 세후 비교는 단순화된 추정 모델입니다 — 일반계좌는 은퇴 시점에 배당소득세 15.4%(연 1.5% 배당 가정) + 양도소득세 22%(연 250만원 공제)를 한 번에 적용하고, ISA는 200만원 비과세 후 초과 수익에 9.9% 분리과세를 은퇴 시점에 한 번 적용합니다. 연금저축펀드는 적립 기간 중 연 600만원 한도까지 15% 세액공제 환급을 받습니다(별도 수령, 계좌 잔액에는 합산하지 않음).
+  나이는 만 나이 기준으로 표시하며, 그래프와 표의 연도·나이는 현재 연도(자동 계산)를 기준으로 계산됩니다.
   실제 세법, 한도, 개인 소득 구간, 수수료, 시장 변동성에 따라 결과는 달라질 수 있으니 투자/세무 결정 시 전문가와 상담하세요.
 </div>
 
@@ -413,14 +431,29 @@
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
 const toEok = n => {
   const sign = n < 0 ? '-' : '';
-  n = Math.abs(n);
-  const eok = Math.floor(n / 100000000);
-  const man = Math.round((n % 100000000) / 10000);
-  if(eok > 0 && man > 0) return `${sign}${eok}억 ${man.toLocaleString('ko-KR')}만원`;
-  if(eok > 0) return `${sign}${eok}억원`;
-  return `${sign}${man.toLocaleString('ko-KR')}만원`;
+  n = Math.round(Math.abs(n));
+  const UNITS = [
+    { label:'경', value:1e16 },
+    { label:'조', value:1e12 },
+    { label:'억', value:1e8 }
+  ];
+  let remaining = n;
+  const parts = [];
+  for(const u of UNITS){
+    const v = Math.floor(remaining / u.value);
+    if(v > 0){
+      parts.push(v.toLocaleString('ko-KR') + u.label);
+      remaining -= v * u.value;
+    }
+  }
+  const man = Math.round(remaining / 10000);
+  if(man > 0) parts.push(man.toLocaleString('ko-KR') + '만원');
+  if(parts.length === 0) return sign + '0원';
+  let result = sign + parts.join(' ');
+  if(!result.endsWith('원')) result += '원';
+  return result;
 };
-const toMan = n => `${n<0?'-':''}${fmt(Math.abs(n)/10000)}만원`;
+const toMan = toEok;
 
 function simulateAccumulation(monthly, lump, annualRate, years){
   const months = years * 12;
@@ -454,15 +487,17 @@ function simulateWithdrawalFlat(startBalance, monthlyWithdraw, annualRate, maxMo
 }
 
 // pension: same balance mechanics, gross withdrawal reduces balance; net cash to retiree is taxed separately
-function simulateWithdrawalPension(startBalance, monthlyWithdraw, annualRate, maxMonths, pensionTaxRate){
+// monthlyNetWithdraw = 실수령(세후) 금액. 계좌에서는 세금(pensionTaxRate)을 더 떼어가야 하므로 gross로 환산해서 차감.
+function simulateWithdrawalPension(startBalance, monthlyNetWithdraw, annualRate, maxMonths, pensionTaxRate){
   const r = annualRate / 100 / 12;
+  const grossWithdraw = monthlyNetWithdraw / (1 - pensionTaxRate);
   let balance = startBalance;
   const series = [balance];
   let depletedAt = null;
   let totalPensionTax = 0;
   for(let m=1; m<=maxMonths; m++){
-    balance = balance * (1+r) - monthlyWithdraw;
-    totalPensionTax += monthlyWithdraw * pensionTaxRate;
+    balance = balance * (1+r) - grossWithdraw;
+    totalPensionTax += grossWithdraw * pensionTaxRate;
     if(balance <= 0){
       balance = 0;
       series.push(balance);
@@ -471,10 +506,11 @@ function simulateWithdrawalPension(startBalance, monthlyWithdraw, annualRate, ma
     }
     series.push(balance);
   }
-  return { series, depletedAt, endBalance: balance, totalPensionTax };
+  return { series, depletedAt, endBalance: balance, totalPensionTax, grossWithdraw };
 }
 
 function calc(){
+  const age = +document.getElementById('age').value;
   const monthly = +document.getElementById('monthly').value;
   const lump = +document.getElementById('lump').value;
   const rate = +document.getElementById('returnRate').value;
@@ -516,7 +552,7 @@ function calc(){
   const pensionSim = simulateWithdrawalPension(pensionStart, withdraw, withdrawRate, maxWithdrawMonths, pensionTaxRate);
 
   return {
-    monthly, lump, rate, accumYears, withdraw, withdrawRate, principal, gain, accum,
+    age, monthly, lump, rate, accumYears, withdraw, withdrawRate, principal, gain, accum,
     general:{ dividendTax, capitalGainTax, tax:generalTax, start:generalStart, sim:generalSim },
     isa:{ tax:isaTax, start:isaStart, sim:isaSim },
     pension:{ creditRefund, start:pensionStart, sim:pensionSim, taxRate:pensionTaxRate }
@@ -540,6 +576,7 @@ function balanceAtYear(series, years){
 function render(){
   const d = calc();
 
+  document.getElementById('ageVal').textContent = d.age + '세';
   document.getElementById('monthlyVal').textContent = fmt(d.monthly) + '원';
   document.getElementById('lumpVal').textContent = fmt(d.lump) + '원';
   document.getElementById('returnVal').textContent = d.rate + '%';
@@ -551,6 +588,7 @@ function render(){
     const el = document.getElementById(id);
     if(document.activeElement !== el) el.value = val;
   };
+  syncIfNotFocused('ageInput', d.age);
   syncIfNotFocused('monthlyInput', d.monthly);
   syncIfNotFocused('lumpInput', d.lump);
   syncIfNotFocused('returnRateInput', d.rate);
@@ -568,9 +606,10 @@ function render(){
 
   const currentYear = new Date().getFullYear();
   const retireYear = currentYear + d.accumYears;
+  const retireAge = d.age + d.accumYears;
   document.getElementById('retireAmount').textContent = toEok(d.accum.finalBalance);
   document.getElementById('retireSub').textContent =
-    `총 납입(원금) ${toEok(d.principal)} · ${d.accumYears}년간 적립 후(${retireYear}년) 평가액(세전)`;
+    `총 납입(원금) ${toEok(d.principal)} · ${d.accumYears}년간 적립 후(${retireYear}년, 만 ${retireAge}세) 평가액(세전)`;
 
   // ---- account comparison cards ----
   const gSus = sustainText(d.general.sim, d.withdraw);
@@ -581,9 +620,10 @@ function render(){
     <div class="account-card">
       <div class="badge">일반 계좌</div>
       <div class="row"><span class="label">은퇴 시점 평가액(세전)</span><span class="val">${toEok(d.accum.finalBalance)}</span></div>
-      <div class="row"><span class="label">배당소득세+양도소득세</span><span class="val red">-${toMan(d.general.tax)}</span></div>
+      <div class="row"><span class="label">배당소득세+양도소득세 (은퇴 시점 일괄)</span><span class="val red">-${toEok(d.general.tax)}</span></div>
       <div class="divider"></div>
       <div class="row"><span class="label">인출 시작 금액(세후)</span><span class="val">${toEok(d.general.start)}</span></div>
+      <div class="row"><span class="label">월 실수령액</span><span class="val">${toEok(d.withdraw)}</span></div>
       <div class="final-amount ${gSus.warn?'red':'green'}">${gSus.label}</div>
       <div class="final-label">${gSus.sub}</div>
     </div>
@@ -591,9 +631,10 @@ function render(){
     <div class="account-card highlight">
       <div class="badge green">ISA 계좌 (중개형)</div>
       <div class="row"><span class="label">은퇴 시점 평가액(세전)</span><span class="val">${toEok(d.accum.finalBalance)}</span></div>
-      <div class="row"><span class="label">분리과세(9.9%, 200만원 비과세)</span><span class="val red">-${toMan(d.isa.tax)}</span></div>
+      <div class="row"><span class="label">분리과세(9.9%, 200만원 비과세, 은퇴 시점 일괄)</span><span class="val red">-${toEok(d.isa.tax)}</span></div>
       <div class="divider"></div>
       <div class="row"><span class="label">인출 시작 금액(세후)</span><span class="val">${toEok(d.isa.start)}</span></div>
+      <div class="row"><span class="label">월 실수령액</span><span class="val">${toEok(d.withdraw)}</span></div>
       <div class="final-amount ${iSus.warn?'red':'green'}">${iSus.label}</div>
       <div class="final-label">${iSus.sub}</div>
     </div>
@@ -601,10 +642,11 @@ function render(){
     <div class="account-card">
       <div class="badge purple">연금저축펀드</div>
       <div class="row"><span class="label">은퇴 시점 평가액(세전)</span><span class="val">${toEok(d.accum.finalBalance)}</span></div>
-      <div class="row"><span class="label">적립기간 세액공제 환급(15%)</span><span class="val purple">+${toMan(d.pension.creditRefund)}</span></div>
-      <div class="row"><span class="label">인출시 연금소득세(평균 4.4%)</span><span class="val red">매월 인출액 기준 차감</span></div>
+      <div class="row"><span class="label">적립기간 세액공제 환급(15%)</span><span class="val purple">+${toEok(d.pension.creditRefund)}</span></div>
       <div class="divider"></div>
       <div class="row"><span class="label">인출 시작 금액(세전, 세액공제 별도 수령)</span><span class="val">${toEok(d.pension.start)}</span></div>
+      <div class="row"><span class="label">월 실수령액</span><span class="val">${toEok(d.withdraw)}</span></div>
+      <div class="row"><span class="label">월 계좌 차감액 (연금소득세 4.4% 포함, 세전)</span><span class="val red">-${toEok(d.pension.sim.grossWithdraw)}</span></div>
       <div class="final-amount ${pSus.warn?'red':'green'}">${pSus.label}</div>
       <div class="final-label">${pSus.sub}</div>
     </div>
@@ -617,8 +659,10 @@ function render(){
     const g = balanceAtYear(d.general.sim.series, y);
     const i = balanceAtYear(d.isa.sim.series, y);
     const p = balanceAtYear(d.pension.sim.series, y);
+    const snapshotAge = retireAge + y;
+    const snapshotYear = retireYear + y;
     rows += `<tr>
-      <td>${y}년 후</td>
+      <td>${y}년 후 (${snapshotYear}년, 만 ${snapshotAge}세)</td>
       <td class="gray ${g.val<=0?'depleted':''}">${g.val<=0?'고갈됨':toEok(g.val)}</td>
       <td class="green ${i.val<=0?'depleted':''}">${i.val<=0?'고갈됨':toEok(i.val)}</td>
       <td class="purple ${p.val<=0?'depleted':''}">${p.val<=0?'고갈됨':toEok(p.val)}</td>
@@ -675,11 +719,13 @@ function drawChart(d){
   });
 
   const currentYear = new Date().getFullYear();
-  const retireYear = currentYear + Math.round(accumMonths/12);
+  const retireYearsFromNow = Math.round(accumMonths/12);
+  const retireYear = currentYear + retireYearsFromNow;
+  const retireAge = d.age + retireYearsFromNow;
 
   const dividerX = padLeft + (accumMonths/totalMonths)*chartW;
   svgContent += `<line x1="${dividerX}" y1="${padTop}" x2="${dividerX}" y2="${padTop+chartH}" stroke="#444" stroke-width="1" stroke-dasharray="4 4"/>`;
-  svgContent += `<text x="${dividerX}" y="${padTop-6}" text-anchor="middle">은퇴 시점 (${retireYear}년)</text>`;
+  svgContent += `<text x="${dividerX}" y="${padTop-6}" text-anchor="middle">은퇴 시점 (${retireYear}년, 만 ${retireAge}세)</text>`;
 
   const steps = 5;
   for(let i=0;i<=steps;i++){
@@ -693,9 +739,12 @@ function drawChart(d){
   for(let i=0;i<=xTicks;i++){
     const m = Math.round(totalMonths * i / xTicks);
     const x = padLeft + (m/totalMonths)*chartW;
-    const yearLabel = currentYear + Math.round(m/12);
+    const yearsFromNow = Math.round(m/12);
+    const yearLabel = currentYear + yearsFromNow;
+    const ageLabel = d.age + yearsFromNow;
     const anchor = i===0 ? 'start' : (i===xTicks ? 'end' : 'middle');
-    svgContent += `<text x="${x}" y="${H-15}" text-anchor="${anchor}">${yearLabel}년</text>`;
+    svgContent += `<text x="${x}" y="${H-25}" text-anchor="${anchor}">${yearLabel}년</text>`;
+    svgContent += `<text x="${x}" y="${H-11}" text-anchor="${anchor}">(만 ${ageLabel}세)</text>`;
     svgContent += `<line x1="${x}" y1="${padTop}" x2="${x}" y2="${padTop+chartH}" stroke="#222428" stroke-width="1"/>`;
   }
 
@@ -731,6 +780,7 @@ function bindPair(rangeId, inputId){
   });
 }
 
+bindPair('age','ageInput');
 bindPair('monthly','monthlyInput');
 bindPair('lump','lumpInput');
 bindPair('returnRate','returnRateInput');
