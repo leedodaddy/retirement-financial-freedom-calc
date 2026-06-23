@@ -196,7 +196,9 @@
     border-radius:14px;
     padding:20px;
   }
-  .account-card.highlight{ border-color:var(--green); }
+  .account-card.border-gray{ border-color:var(--gray); }
+  .account-card.border-green{ border-color:var(--green); }
+  .account-card.border-purple{ border-color:var(--purple); }
   .badge{
     display:inline-block;
     background:#262830;
@@ -700,7 +702,7 @@ function render(){
   const pSus = sustainText(d.pension.sim, d.withdraw);
 
   document.getElementById('accountCards').innerHTML = `
-    <div class="account-card">
+    <div class="account-card border-gray">
       <div class="badge">일반 계좌</div>
       <div class="row"><span class="label">은퇴 시점 평가액(세전)</span><span class="val">${toEok(d.accum.finalBalance)}</span></div>
       <div class="row"><span class="label">배당소득세+양도소득세 (은퇴 시점 일괄)</span><span class="val red">-${toEok(d.general.tax)}</span></div>
@@ -712,7 +714,7 @@ function render(){
       <div class="final-label">${gSus.sub}</div>
     </div>
 
-    <div class="account-card highlight">
+    <div class="account-card border-green">
       <div class="badge green">ISA 계좌 (중개형)</div>
       ${d.isa.limitOn ? `<div class="row"><span class="label">ISA 납입 인정액(한도 적용, 누적)</span><span class="val">${toEok(d.isa.principal)}</span></div>` : ''}
       ${d.isa.limitOn && d.isa.contributionCapped ? `<div class="row"><span class="label red" style="color:var(--red)">⚠ 한도 초과로 ISA에 못 들어간 금액</span><span class="val red">${toEok(d.principal - d.isa.principal)}</span></div>` : ''}
@@ -726,7 +728,7 @@ function render(){
       <div class="final-label">${iSus.sub}</div>
     </div>
 
-    <div class="account-card">
+    <div class="account-card border-purple">
       <div class="badge purple">연금저축펀드</div>
       <div class="row"><span class="label">은퇴 시점 평가액(세전)</span><span class="val">${toEok(d.accum.finalBalance)}</span></div>
       <div class="row"><span class="label">적립기간 세액공제 환급(15%)</span><span class="val purple">+${toEok(d.pension.creditRefund)}</span></div>
