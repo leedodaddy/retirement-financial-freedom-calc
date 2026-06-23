@@ -15,6 +15,7 @@
     --purple:#7c6cf5;
     --red:#ef5b5b;
     --blue:#6cb6f5;
+    --gray:#b6b6b6;
   }
   *{box-sizing:border-box;}
   body{
@@ -23,7 +24,7 @@
     color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic",sans-serif;
     padding:24px;
-    max-width:1100px;
+    max-width:1200px;
     margin:0 auto;
   }
   h1{
@@ -74,6 +75,33 @@
     color:var(--muted);
     font-size:12px;
     margin-top:6px;
+    margin-bottom:12px;
+  }
+  .direct-input{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-top:8px;
+  }
+  .direct-input label{
+    color:var(--muted);
+    font-size:12px;
+    white-space:nowrap;
+  }
+  .direct-input input[type=number]{
+    flex:1;
+    background:#0e0f11;
+    border:1px solid var(--card-border);
+    color:var(--text);
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:13px;
+    width:100%;
+    min-width:0;
+  }
+  .direct-input input[type=number]:focus{
+    outline:none;
+    border-color:var(--blue);
   }
   .quick-select{
     display:flex;
@@ -141,6 +169,7 @@
     border:1px solid var(--card-border);
     border-radius:14px;
     padding:20px;
+    margin-bottom:24px;
   }
   .legend{
     display:flex;
@@ -154,6 +183,77 @@
     width:10px;height:10px;border-radius:2px;margin-right:6px;
   }
   svg text{ fill:var(--muted); font-size:11px; }
+
+  .account-cards{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:16px;
+    margin-bottom:24px;
+  }
+  .account-card{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:14px;
+    padding:20px;
+  }
+  .account-card.highlight{ border-color:var(--green); }
+  .badge{
+    display:inline-block;
+    background:#262830;
+    color:var(--text);
+    font-size:12px;
+    padding:5px 10px;
+    border-radius:8px;
+    margin-bottom:14px;
+  }
+  .badge.green{ background:rgba(62,207,142,0.15); color:var(--green); }
+  .badge.purple{ background:rgba(124,108,245,0.15); color:var(--purple); }
+  .row{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+    padding:6px 0;
+  }
+  .row .label{ color:var(--muted); }
+  .row .val{ font-weight:600; }
+  .row .val.red{ color:var(--red); }
+  .row .val.purple{ color:var(--purple); }
+  .row .val.warn{ color:var(--red); }
+  .divider{
+    border-top:1px solid var(--card-border);
+    margin:10px 0;
+  }
+  .final-amount{
+    font-size:22px;
+    font-weight:800;
+    margin-top:8px;
+  }
+  .final-amount.green{ color:var(--green); }
+  .final-amount.purple{ color:var(--purple); }
+  .final-amount.red{ color:var(--red); }
+  .final-label{
+    color:var(--muted);
+    font-size:12px;
+    margin-top:2px;
+  }
+
+  table.snapshot{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  table.snapshot th, table.snapshot td{
+    padding:10px 12px;
+    text-align:right;
+    border-bottom:1px solid var(--card-border);
+  }
+  table.snapshot th:first-child, table.snapshot td:first-child{ text-align:left; }
+  table.snapshot th{ color:var(--muted); font-weight:600; }
+  table.snapshot td.gray{ color:var(--gray); }
+  table.snapshot td.green{ color:var(--green); }
+  table.snapshot td.purple{ color:var(--purple); }
+  table.snapshot td.depleted{ color:var(--red); }
+
   .note{
     color:var(--muted);
     font-size:12px;
@@ -165,7 +265,7 @@
 <body>
 
 <h1>이도대디의 노후대비와 경제적자유를 위한 계산기</h1>
-<p class="sub">매달 적립해서 자산을 불리는 기간과, 은퇴 후 매달 꺼내 쓰는 기간을 함께 시뮬레이션합니다.</p>
+<p class="sub">매달 적립해서 자산을 불리는 기간과, 은퇴 후 매달 꺼내 쓰는 기간을 함께 시뮬레이션합니다. 일반계좌·ISA·연금저축펀드 세후 차이까지 비교합니다.</p>
 
 <div class="phase-title">1단계 · 적립(거치) 기간</div>
 <div class="controls">
@@ -174,30 +274,47 @@
     <div class="control-value" id="monthlyVal">500,000원</div>
     <input type="range" id="monthly" min="0" max="10000000" step="10000" value="500000">
     <div class="range-bounds"><span>0원</span><span>1,000만원</span></div>
+    <div class="direct-input">
+      <label>직접입력</label>
+      <input type="number" id="monthlyInput" value="500000" step="10000">
+    </div>
   </div>
   <div class="control-card">
     <div class="control-label">초기 거치 금액 (선택)</div>
     <div class="control-value" id="lumpVal">0원</div>
     <input type="range" id="lump" min="0" max="10000000000" step="1000000" value="0">
     <div class="range-bounds"><span>0원</span><span>100억원</span></div>
+    <div class="direct-input">
+      <label>직접입력</label>
+      <input type="number" id="lumpInput" value="0" step="1000000">
+    </div>
   </div>
   <div class="control-card">
     <div class="control-label">연평균 복리 수익률</div>
     <div class="control-value" id="returnVal">10%</div>
     <input type="range" id="returnRate" min="1" max="100" step="1" value="10">
     <div class="range-bounds"><span>1%</span><span>100%</span></div>
+    <div class="direct-input">
+      <label>직접입력(%)</label>
+      <input type="number" id="returnRateInput" value="10" step="1">
+    </div>
   </div>
   <div class="control-card">
     <div class="control-label">적립 기간</div>
     <div class="control-value" id="accumVal">20년</div>
     <div class="quick-select">
+      <button class="quick-btn" data-years="0">0년</button>
       <button class="quick-btn" data-years="5">5년</button>
       <button class="quick-btn" data-years="10">10년</button>
       <button class="quick-btn" data-years="20">20년</button>
       <button class="quick-btn" data-years="30">30년</button>
     </div>
-    <input type="range" id="accumYears" min="1" max="100" step="1" value="20">
-    <div class="range-bounds"><span>1년</span><span>100년</span></div>
+    <input type="range" id="accumYears" min="0" max="100" step="1" value="20">
+    <div class="range-bounds"><span>0년</span><span>100년</span></div>
+    <div class="direct-input">
+      <label>직접입력(년)</label>
+      <input type="number" id="accumYearsInput" value="20" step="1">
+    </div>
   </div>
 </div>
 
@@ -208,41 +325,52 @@
     <div class="control-value" id="withdrawVal">2,000,000원</div>
     <input type="range" id="withdraw" min="1000000" max="100000000" step="100000" value="2000000">
     <div class="range-bounds"><span>100만원</span><span>1억원</span></div>
+    <div class="direct-input">
+      <label>직접입력</label>
+      <input type="number" id="withdrawInput" value="2000000" step="100000">
+    </div>
   </div>
   <div class="control-card">
     <div class="control-label">인출 기간 중 연평균 수익률</div>
     <div class="control-value" id="withdrawReturnVal">6%</div>
     <input type="range" id="withdrawReturn" min="0" max="100" step="1" value="6">
     <div class="range-bounds"><span>0%</span><span>100%</span></div>
+    <div class="direct-input">
+      <label>직접입력(%)</label>
+      <input type="number" id="withdrawReturnInput" value="6" step="1">
+    </div>
   </div>
 </div>
 
 <div class="result-card" id="mainResult">
-  <div class="result-label">은퇴 시점(적립 종료) 평가 금액</div>
+  <div class="result-label">은퇴 시점(적립 종료) 평가 금액 (세전)</div>
   <div class="result-amount" id="retireAmount">-</div>
   <div class="result-sub" id="retireSub">-</div>
 </div>
 
-<div class="result-card" id="sustainResult">
-  <div class="result-label">인출 시뮬레이션 결과</div>
-  <div class="result-amount" id="sustainAmount">-</div>
-  <div class="result-sub" id="sustainSub">-</div>
-</div>
-
-<div class="breakdown" id="breakdownCards"></div>
-
 <div class="chart-wrap">
   <div class="legend">
-    <div><span class="dot" style="background:#3ecf8e"></span>적립 기간 (자산 증가)</div>
-    <div><span class="dot" style="background:#7c6cf5"></span>인출 기간 (자산 변화)</div>
+    <div><span class="dot" style="background:#3ecf8e"></span>적립 기간 (자산 증가, 세전)</div>
+    <div><span class="dot" style="background:#b6b6b6"></span>인출-일반계좌</div>
+    <div><span class="dot" style="background:#3ecf8e"></span>인출-ISA</div>
+    <div><span class="dot" style="background:#7c6cf5"></span>인출-연금저축펀드</div>
   </div>
   <svg id="chart" viewBox="0 0 900 360" width="100%" height="360"></svg>
 </div>
 
+<div class="phase-title">계좌 유형별 비교 (세후)</div>
+<div class="account-cards" id="accountCards"></div>
+
+<div class="phase-title">월 인출액 기준 시점별 잔액 스냅샷</div>
+<div class="chart-wrap">
+  <div id="snapshotTableWrap"></div>
+</div>
+
 <div class="note">
-  ※ 적립 기간은 월 복리로 계산하며, 매달 적립액이 일정하다고 가정합니다. 인출 기간에는 매달 말 수익률이 적용된 뒤 인출액을 차감하는 방식으로 시뮬레이션합니다.
-  인출 기간 수익률이 낮게(또는 0으로) 설정된 경우 자산이 빠르게 줄어들 수 있고, 월 인출액보다 자산 성장이 크면 "고갈되지 않음(경제적 자유 달성)"으로 표시됩니다.
-  실제 결과는 세금, 수수료, 시장 변동성에 따라 달라질 수 있는 단순화된 추정 모델입니다.
+  ※ 적립 기간은 월 복리로 계산하며, 매달 적립액이 일정하다고 가정합니다(0년으로 두면 거치금액만으로 바로 인출을 시작합니다). 인출 기간에는 매달 말 수익률이 적용된 뒤 인출액을 차감하는 방식으로 시뮬레이션합니다.
+  계좌별 세후 비교는 단순화된 추정 모델입니다 — 일반계좌는 은퇴 시점에 배당소득세 15.4%(연 1.5% 배당 가정) + 양도소득세 22%(연 250만원 공제)를 한 번에 적용해 순자산을 계산하고, 그 이후 인출 기간에는 추가 세금이 없다고 가정합니다.
+  ISA는 200만원 비과세 후 초과 수익에 9.9% 분리과세를 은퇴 시점에 한 번 적용합니다. 연금저축펀드는 적립 기간 중 연 600만원 한도까지 15% 세액공제 환급을 받고(별도 표시), 인출 시 매월 인출액에 평균 4.4%의 연금소득세를 적용합니다.
+  실제 세법, 한도, 개인 소득 구간, 수수료, 시장 변동성에 따라 결과는 달라질 수 있으니 투자/세무 결정 시 전문가와 상담하세요.
 </div>
 
 <script>
@@ -256,6 +384,7 @@ const toEok = n => {
   if(eok > 0) return `${sign}${eok}억원`;
   return `${sign}${man.toLocaleString('ko-KR')}만원`;
 };
+const toMan = n => `${n<0?'-':''}${fmt(Math.abs(n)/10000)}만원`;
 
 function simulateAccumulation(monthly, lump, annualRate, years){
   const months = years * 12;
@@ -269,7 +398,8 @@ function simulateAccumulation(monthly, lump, annualRate, years){
   return { finalBalance: balance, series };
 }
 
-function simulateWithdrawal(startBalance, monthlyWithdraw, annualRate, maxMonths){
+// general/isa: liquidation tax applied once, then no further tax on withdrawal
+function simulateWithdrawalFlat(startBalance, monthlyWithdraw, annualRate, maxMonths){
   const r = annualRate / 100 / 12;
   let balance = startBalance;
   const series = [balance];
@@ -287,6 +417,27 @@ function simulateWithdrawal(startBalance, monthlyWithdraw, annualRate, maxMonths
   return { series, depletedAt, endBalance: balance };
 }
 
+// pension: same balance mechanics, gross withdrawal reduces balance; net cash to retiree is taxed separately
+function simulateWithdrawalPension(startBalance, monthlyWithdraw, annualRate, maxMonths, pensionTaxRate){
+  const r = annualRate / 100 / 12;
+  let balance = startBalance;
+  const series = [balance];
+  let depletedAt = null;
+  let totalPensionTax = 0;
+  for(let m=1; m<=maxMonths; m++){
+    balance = balance * (1+r) - monthlyWithdraw;
+    totalPensionTax += monthlyWithdraw * pensionTaxRate;
+    if(balance <= 0){
+      balance = 0;
+      series.push(balance);
+      depletedAt = m;
+      break;
+    }
+    series.push(balance);
+  }
+  return { series, depletedAt, endBalance: balance, totalPensionTax };
+}
+
 function calc(){
   const monthly = +document.getElementById('monthly').value;
   const lump = +document.getElementById('lump').value;
@@ -297,11 +448,57 @@ function calc(){
 
   const accum = simulateAccumulation(monthly, lump, rate, accumYears);
   const principal = lump + monthly * 12 * accumYears;
+  const gain = accum.finalBalance - principal;
+
+  // ---- 일반계좌 ----
+  const dividendYieldRate = 0.015;
+  const dividendBase = Math.min(accum.finalBalance * dividendYieldRate * Math.max(accumYears,1), Math.max(gain,0));
+  const dividendTax = dividendBase * 0.154;
+  const capitalGainBase = Math.max(gain - dividendBase, 0);
+  const annualExemption = 2500000 * Math.max(accumYears,1);
+  const taxableCapitalGain = Math.max(capitalGainBase - annualExemption, 0);
+  const capitalGainTax = taxableCapitalGain * 0.22;
+  const generalTax = dividendTax + capitalGainTax;
+  const generalStart = Math.max(accum.finalBalance - generalTax, 0);
+
+  // ---- ISA ----
+  const isaExemption = 2000000;
+  const isaTaxableGain = Math.max(gain - isaExemption, 0);
+  const isaTax = isaTaxableGain * 0.099;
+  const isaStart = Math.max(accum.finalBalance - isaTax, 0);
+
+  // ---- 연금저축펀드 ----
+  const annualContribution = monthly * 12;
+  const eligibleAnnual = Math.min(annualContribution, 6000000);
+  const creditRefund = eligibleAnnual * Math.max(accumYears,1) * (accumYears>0?1:0) * 0.15;
+  const pensionStart = accum.finalBalance;
+  const pensionTaxRate = 0.044;
 
   const maxWithdrawMonths = 100 * 12;
-  const withdrawSim = simulateWithdrawal(accum.finalBalance, withdraw, withdrawRate, maxWithdrawMonths);
+  const generalSim = simulateWithdrawalFlat(generalStart, withdraw, withdrawRate, maxWithdrawMonths);
+  const isaSim = simulateWithdrawalFlat(isaStart, withdraw, withdrawRate, maxWithdrawMonths);
+  const pensionSim = simulateWithdrawalPension(pensionStart, withdraw, withdrawRate, maxWithdrawMonths, pensionTaxRate);
 
-  return { monthly, lump, rate, accumYears, withdraw, withdrawRate, principal, accum, withdrawSim };
+  return {
+    monthly, lump, rate, accumYears, withdraw, withdrawRate, principal, gain, accum,
+    general:{ dividendTax, capitalGainTax, tax:generalTax, start:generalStart, sim:generalSim },
+    isa:{ tax:isaTax, start:isaStart, sim:isaSim },
+    pension:{ creditRefund, start:pensionStart, sim:pensionSim, taxRate:pensionTaxRate }
+  };
+}
+
+function sustainText(sim, withdraw){
+  if(sim.depletedAt === null){
+    return { label:'고갈되지 않음 (경제적 자유)', sub:`100년 후 잔액 ${toEok(sim.endBalance)}`, warn:false };
+  }
+  const y = Math.floor(sim.depletedAt/12), m = sim.depletedAt%12;
+  return { label:`${y}년 ${m}개월 후 고갈`, sub:`월 ${fmt(withdraw)}원 인출 기준`, warn:true };
+}
+
+function balanceAtYear(series, years){
+  const idx = years*12;
+  if(idx >= series.length) return { val:0, depleted:true };
+  return { val:series[idx], depleted: series[idx] <= 0 && idx < series.length-1 ? false : series[idx]<=0 };
 }
 
 function render(){
@@ -314,53 +511,80 @@ function render(){
   document.getElementById('withdrawVal').textContent = fmt(d.withdraw) + '원';
   document.getElementById('withdrawReturnVal').textContent = d.withdrawRate + '%';
 
+  document.getElementById('monthlyInput').value = d.monthly;
+  document.getElementById('lumpInput').value = d.lump;
+  document.getElementById('returnRateInput').value = d.rate;
+  document.getElementById('accumYearsInput').value = d.accumYears;
+  document.getElementById('withdrawInput').value = d.withdraw;
+  document.getElementById('withdrawReturnInput').value = d.withdrawRate;
+
   document.querySelectorAll('.quick-btn').forEach(btn=>{
     btn.classList.toggle('active', +btn.dataset.years === d.accumYears);
   });
 
   document.getElementById('retireAmount').textContent = toEok(d.accum.finalBalance);
   document.getElementById('retireSub').textContent =
-    `총 납입(원금) ${toEok(d.principal)} · ${d.accumYears}년간 적립 후 평가액`;
+    `총 납입(원금) ${toEok(d.principal)} · ${d.accumYears}년간 적립 후 평가액(세전)`;
 
-  const sustainResultEl = document.getElementById('sustainResult');
-  const sustainAmountEl = document.getElementById('sustainAmount');
-  const sustainSubEl = document.getElementById('sustainSub');
+  // ---- account comparison cards ----
+  const gSus = sustainText(d.general.sim, d.withdraw);
+  const iSus = sustainText(d.isa.sim, d.withdraw);
+  const pSus = sustainText(d.pension.sim, d.withdraw);
 
-  if(d.withdrawSim.depletedAt === null){
-    sustainResultEl.classList.remove('warn');
-    sustainAmountEl.classList.remove('warn');
-    sustainAmountEl.textContent = '고갈되지 않음 (경제적 자유 달성)';
-    sustainSubEl.textContent =
-      `월 ${fmt(d.withdraw)}원씩 100년 이상 인출해도 자산이 줄지 않거나 계속 유지됨 (100년 후 잔액 ${toEok(d.withdrawSim.endBalance)})`;
-  } else {
-    const dYears = Math.floor(d.withdrawSim.depletedAt / 12);
-    const dMonths = d.withdrawSim.depletedAt % 12;
-    sustainResultEl.classList.add('warn');
-    sustainAmountEl.classList.add('warn');
-    sustainAmountEl.textContent = `${dYears}년 ${dMonths}개월 후 고갈`;
-    sustainSubEl.textContent =
-      `월 ${fmt(d.withdraw)}원씩 인출 시, 은퇴 후 ${dYears}년 ${dMonths}개월이 지나면 자산이 0원이 됩니다`;
-  }
+  document.getElementById('accountCards').innerHTML = `
+    <div class="account-card">
+      <div class="badge">일반 계좌</div>
+      <div class="row"><span class="label">은퇴 시점 평가액(세전)</span><span class="val">${toEok(d.accum.finalBalance)}</span></div>
+      <div class="row"><span class="label">배당소득세+양도소득세</span><span class="val red">-${toMan(d.general.tax)}</span></div>
+      <div class="divider"></div>
+      <div class="row"><span class="label">인출 시작 금액(세후)</span><span class="val">${toEok(d.general.start)}</span></div>
+      <div class="final-amount ${gSus.warn?'red':'green'}">${gSus.label}</div>
+      <div class="final-label">${gSus.sub}</div>
+    </div>
 
-  const totalWithdrawn = d.withdraw * (d.withdrawSim.depletedAt ?? d.withdrawSim.series.length-1);
+    <div class="account-card highlight">
+      <div class="badge green">ISA 계좌 (중개형)</div>
+      <div class="row"><span class="label">은퇴 시점 평가액(세전)</span><span class="val">${toEok(d.accum.finalBalance)}</span></div>
+      <div class="row"><span class="label">분리과세(9.9%, 200만원 비과세)</span><span class="val red">-${toMan(d.isa.tax)}</span></div>
+      <div class="divider"></div>
+      <div class="row"><span class="label">인출 시작 금액(세후)</span><span class="val">${toEok(d.isa.start)}</span></div>
+      <div class="final-amount ${iSus.warn?'red':'green'}">${iSus.label}</div>
+      <div class="final-label">${iSus.sub}</div>
+    </div>
 
-  document.getElementById('breakdownCards').innerHTML = `
-    <div class="breakdown-card">
-      <div class="label">총 납입(원금)</div>
-      <div class="value">${toEok(d.principal)}</div>
+    <div class="account-card">
+      <div class="badge purple">연금저축펀드</div>
+      <div class="row"><span class="label">은퇴 시점 평가액(세전)</span><span class="val">${toEok(d.accum.finalBalance)}</span></div>
+      <div class="row"><span class="label">적립기간 세액공제 환급(15%)</span><span class="val purple">+${toMan(d.pension.creditRefund)}</span></div>
+      <div class="row"><span class="label">인출시 연금소득세(평균 4.4%)</span><span class="val red">매월 인출액 기준 차감</span></div>
+      <div class="divider"></div>
+      <div class="row"><span class="label">인출 시작 금액(세전, 세액공제 별도 수령)</span><span class="val">${toEok(d.pension.start)}</span></div>
+      <div class="final-amount ${pSus.warn?'red':'green'}">${pSus.label}</div>
+      <div class="final-label">${pSus.sub}</div>
     </div>
-    <div class="breakdown-card">
-      <div class="label">은퇴 시점 평가액</div>
-      <div class="value green">${toEok(d.accum.finalBalance)}</div>
-    </div>
-    <div class="breakdown-card">
-      <div class="label">적립 기간 총 수익</div>
-      <div class="value purple">${toEok(d.accum.finalBalance - d.principal)}</div>
-    </div>
-    <div class="breakdown-card">
-      <div class="label">누적 인출 총액 (고갈 시점까지)</div>
-      <div class="value blue">${toEok(totalWithdrawn)}</div>
-    </div>
+  `;
+
+  // ---- snapshot table ----
+  const years = [10,20,30,40,50];
+  let rows = '';
+  years.forEach(y=>{
+    const g = balanceAtYear(d.general.sim.series, y);
+    const i = balanceAtYear(d.isa.sim.series, y);
+    const p = balanceAtYear(d.pension.sim.series, y);
+    rows += `<tr>
+      <td>${y}년 후</td>
+      <td class="gray ${g.val<=0?'depleted':''}">${g.val<=0?'고갈됨':toEok(g.val)}</td>
+      <td class="green ${i.val<=0?'depleted':''}">${i.val<=0?'고갈됨':toEok(i.val)}</td>
+      <td class="purple ${p.val<=0?'depleted':''}">${p.val<=0?'고갈됨':toEok(p.val)}</td>
+    </tr>`;
+  });
+  document.getElementById('snapshotTableWrap').innerHTML = `
+    <table class="snapshot">
+      <thead>
+        <tr><th>은퇴 후 경과 시점</th><th>일반계좌</th><th>ISA 계좌</th><th>연금저축펀드</th></tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
   `;
 
   drawChart(d);
@@ -373,12 +597,14 @@ function drawChart(d){
   const chartW = W - padLeft - 20;
 
   const accumSeries = d.accum.series;
-  const withdrawSeries = d.withdrawSim.series;
   const accumMonths = accumSeries.length - 1;
-  const withdrawMonths = withdrawSeries.length - 1;
-  const totalMonths = accumMonths + withdrawMonths;
 
-  const allVals = [...accumSeries, ...withdrawSeries];
+  const series3 = [d.general.sim.series, d.isa.sim.series, d.pension.sim.series];
+  const colors3 = ['#b6b6b6', '#3ecf8e', '#7c6cf5'];
+  const withdrawMonthsMax = Math.max(...series3.map(s=>s.length-1));
+  const totalMonths = accumMonths + withdrawMonthsMax;
+
+  const allVals = [...accumSeries, ...series3.flat()];
   const maxVal = Math.max(...allVals) * 1.05 || 1;
 
   function buildPath(series, offsetMonths, stride){
@@ -394,11 +620,13 @@ function drawChart(d){
   }
 
   const accumStride = Math.max(1, Math.floor(accumSeries.length / 200));
-  const withdrawStride = Math.max(1, Math.floor(withdrawSeries.length / 200));
 
   let svgContent = '';
   svgContent += `<path d="${buildPath(accumSeries, 0, accumStride)}" fill="none" stroke="#3ecf8e" stroke-width="3"/>`;
-  svgContent += `<path d="${buildPath(withdrawSeries, accumMonths, withdrawStride)}" fill="none" stroke="#7c6cf5" stroke-width="3"/>`;
+  series3.forEach((s, idx)=>{
+    const stride = Math.max(1, Math.floor(s.length / 200));
+    svgContent += `<path d="${buildPath(s, accumMonths, stride)}" fill="none" stroke="${colors3[idx]}" stroke-width="2.5"/>`;
+  });
 
   const dividerX = padLeft + (accumMonths/totalMonths)*chartW;
   svgContent += `<line x1="${dividerX}" y1="${padTop}" x2="${dividerX}" y2="${padTop+chartH}" stroke="#444" stroke-width="1" stroke-dasharray="4 4"/>`;
@@ -417,13 +645,35 @@ function drawChart(d){
   svg.innerHTML = svgContent;
 }
 
-['monthly','lump','returnRate','accumYears','withdraw','withdrawReturn'].forEach(id=>{
-  document.getElementById(id).addEventListener('input', render);
-});
+function bindPair(rangeId, inputId){
+  const rangeEl = document.getElementById(rangeId);
+  const inputEl = document.getElementById(inputId);
+  rangeEl.addEventListener('input', ()=>{
+    inputEl.value = rangeEl.value;
+    render();
+  });
+  inputEl.addEventListener('input', ()=>{
+    let v = +inputEl.value;
+    if(isNaN(v)) v = 0;
+    const min = +rangeEl.min, max = +rangeEl.max;
+    if(v < min) v = min;
+    if(v > max) v = max;
+    rangeEl.value = v;
+    render();
+  });
+}
+
+bindPair('monthly','monthlyInput');
+bindPair('lump','lumpInput');
+bindPair('returnRate','returnRateInput');
+bindPair('accumYears','accumYearsInput');
+bindPair('withdraw','withdrawInput');
+bindPair('withdrawReturn','withdrawReturnInput');
 
 document.querySelectorAll('.quick-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.getElementById('accumYears').value = btn.dataset.years;
+    document.getElementById('accumYearsInput').value = btn.dataset.years;
     render();
   });
 });
