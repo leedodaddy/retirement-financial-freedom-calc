@@ -272,6 +272,13 @@
   <div class="control-card">
     <div class="control-label">월 적립액</div>
     <div class="control-value" id="monthlyVal">500,000원</div>
+    <div class="quick-select">
+      <button class="quick-btn" data-target="monthly" data-value="500000">50만원</button>
+      <button class="quick-btn" data-target="monthly" data-value="1000000">100만원</button>
+      <button class="quick-btn" data-target="monthly" data-value="3000000">300만원</button>
+      <button class="quick-btn" data-target="monthly" data-value="5000000">500만원</button>
+      <button class="quick-btn" data-target="monthly" data-value="10000000">1,000만원</button>
+    </div>
     <input type="range" id="monthly" min="0" max="10000000" step="10000" value="500000">
     <div class="range-bounds"><span>0원</span><span>1,000만원</span></div>
     <div class="direct-input">
@@ -282,6 +289,13 @@
   <div class="control-card">
     <div class="control-label">초기 거치 금액 (선택)</div>
     <div class="control-value" id="lumpVal">0원</div>
+    <div class="quick-select">
+      <button class="quick-btn" data-target="lump" data-value="10000000">1천만원</button>
+      <button class="quick-btn" data-target="lump" data-value="100000000">1억원</button>
+      <button class="quick-btn" data-target="lump" data-value="300000000">3억원</button>
+      <button class="quick-btn" data-target="lump" data-value="500000000">5억원</button>
+      <button class="quick-btn" data-target="lump" data-value="1000000000">10억원</button>
+    </div>
     <input type="range" id="lump" min="0" max="10000000000" step="1000000" value="0">
     <div class="range-bounds"><span>0원</span><span>100억원</span></div>
     <div class="direct-input">
@@ -292,6 +306,13 @@
   <div class="control-card">
     <div class="control-label">연평균 복리 수익률</div>
     <div class="control-value" id="returnVal">10%</div>
+    <div class="quick-select">
+      <button class="quick-btn" data-target="returnRate" data-value="3">3%</button>
+      <button class="quick-btn" data-target="returnRate" data-value="5">5%</button>
+      <button class="quick-btn" data-target="returnRate" data-value="10">10%</button>
+      <button class="quick-btn" data-target="returnRate" data-value="20">20%</button>
+      <button class="quick-btn" data-target="returnRate" data-value="30">30%</button>
+    </div>
     <input type="range" id="returnRate" min="1" max="100" step="1" value="10">
     <div class="range-bounds"><span>1%</span><span>100%</span></div>
     <div class="direct-input">
@@ -303,11 +324,11 @@
     <div class="control-label">적립 기간</div>
     <div class="control-value" id="accumVal">20년</div>
     <div class="quick-select">
-      <button class="quick-btn" data-years="0">0년</button>
-      <button class="quick-btn" data-years="5">5년</button>
-      <button class="quick-btn" data-years="10">10년</button>
-      <button class="quick-btn" data-years="20">20년</button>
-      <button class="quick-btn" data-years="30">30년</button>
+      <button class="quick-btn" data-target="accumYears" data-value="0">0년</button>
+      <button class="quick-btn" data-target="accumYears" data-value="5">5년</button>
+      <button class="quick-btn" data-target="accumYears" data-value="10">10년</button>
+      <button class="quick-btn" data-target="accumYears" data-value="20">20년</button>
+      <button class="quick-btn" data-target="accumYears" data-value="30">30년</button>
     </div>
     <input type="range" id="accumYears" min="0" max="100" step="1" value="20">
     <div class="range-bounds"><span>0년</span><span>100년</span></div>
@@ -323,8 +344,16 @@
   <div class="control-card">
     <div class="control-label">월 인출액 (연금처럼 꺼내 쓰는 돈)</div>
     <div class="control-value" id="withdrawVal">2,000,000원</div>
-    <input type="range" id="withdraw" min="1000000" max="100000000" step="100000" value="2000000">
-    <div class="range-bounds"><span>100만원</span><span>1억원</span></div>
+    <div class="quick-select">
+      <button class="quick-btn" data-target="withdraw" data-value="0">0원</button>
+      <button class="quick-btn" data-target="withdraw" data-value="1000000">100만원</button>
+      <button class="quick-btn" data-target="withdraw" data-value="2000000">200만원</button>
+      <button class="quick-btn" data-target="withdraw" data-value="3000000">300만원</button>
+      <button class="quick-btn" data-target="withdraw" data-value="4000000">400만원</button>
+      <button class="quick-btn" data-target="withdraw" data-value="5000000">500만원</button>
+    </div>
+    <input type="range" id="withdraw" min="0" max="100000000" step="100000" value="2000000">
+    <div class="range-bounds"><span>0원</span><span>1억원</span></div>
     <div class="direct-input">
       <label>직접입력</label>
       <input type="text" inputmode="numeric" id="withdrawInput" value="2000000">
@@ -333,6 +362,13 @@
   <div class="control-card">
     <div class="control-label">인출 기간 중 연평균 수익률</div>
     <div class="control-value" id="withdrawReturnVal">6%</div>
+    <div class="quick-select">
+      <button class="quick-btn" data-target="withdrawReturn" data-value="3">3%</button>
+      <button class="quick-btn" data-target="withdrawReturn" data-value="5">5%</button>
+      <button class="quick-btn" data-target="withdrawReturn" data-value="10">10%</button>
+      <button class="quick-btn" data-target="withdrawReturn" data-value="20">20%</button>
+      <button class="quick-btn" data-target="withdrawReturn" data-value="30">30%</button>
+    </div>
     <input type="range" id="withdrawReturn" min="0" max="100" step="1" value="6">
     <div class="range-bounds"><span>0%</span><span>100%</span></div>
     <div class="direct-input">
@@ -522,13 +558,19 @@ function render(){
   syncIfNotFocused('withdrawInput', d.withdraw);
   syncIfNotFocused('withdrawReturnInput', d.withdrawRate);
 
+  const currentValues = {
+    monthly: d.monthly, lump: d.lump, returnRate: d.rate,
+    accumYears: d.accumYears, withdraw: d.withdraw, withdrawReturn: d.withdrawRate
+  };
   document.querySelectorAll('.quick-btn').forEach(btn=>{
-    btn.classList.toggle('active', +btn.dataset.years === d.accumYears);
+    btn.classList.toggle('active', +btn.dataset.value === currentValues[btn.dataset.target]);
   });
 
+  const currentYear = new Date().getFullYear();
+  const retireYear = currentYear + d.accumYears;
   document.getElementById('retireAmount').textContent = toEok(d.accum.finalBalance);
   document.getElementById('retireSub').textContent =
-    `총 납입(원금) ${toEok(d.principal)} · ${d.accumYears}년간 적립 후 평가액(세전)`;
+    `총 납입(원금) ${toEok(d.principal)} · ${d.accumYears}년간 적립 후(${retireYear}년) 평가액(세전)`;
 
   // ---- account comparison cards ----
   const gSus = sustainText(d.general.sim, d.withdraw);
@@ -632,9 +674,12 @@ function drawChart(d){
     svgContent += `<path d="${buildPath(s, accumMonths, stride)}" fill="none" stroke="${colors3[idx]}" stroke-width="2.5"/>`;
   });
 
+  const currentYear = new Date().getFullYear();
+  const retireYear = currentYear + Math.round(accumMonths/12);
+
   const dividerX = padLeft + (accumMonths/totalMonths)*chartW;
   svgContent += `<line x1="${dividerX}" y1="${padTop}" x2="${dividerX}" y2="${padTop+chartH}" stroke="#444" stroke-width="1" stroke-dasharray="4 4"/>`;
-  svgContent += `<text x="${dividerX}" y="${padTop-6}" text-anchor="middle">은퇴 시점</text>`;
+  svgContent += `<text x="${dividerX}" y="${padTop-6}" text-anchor="middle">은퇴 시점 (${retireYear}년)</text>`;
 
   const steps = 5;
   for(let i=0;i<=steps;i++){
@@ -643,8 +688,16 @@ function drawChart(d){
     svgContent += `<text x="5" y="${y+4}" text-anchor="start">${toEok(val)}</text>`;
     svgContent += `<line x1="${padLeft}" y1="${y}" x2="${W-10}" y2="${y}" stroke="#2a2b2f" stroke-width="1"/>`;
   }
-  svgContent += `<text x="${padLeft}" y="${H-15}" text-anchor="start">0년</text>`;
-  svgContent += `<text x="${W-10}" y="${H-15}" text-anchor="end">${(totalMonths/12).toFixed(1)}년</text>`;
+
+  const xTicks = 6;
+  for(let i=0;i<=xTicks;i++){
+    const m = Math.round(totalMonths * i / xTicks);
+    const x = padLeft + (m/totalMonths)*chartW;
+    const yearLabel = currentYear + Math.round(m/12);
+    const anchor = i===0 ? 'start' : (i===xTicks ? 'end' : 'middle');
+    svgContent += `<text x="${x}" y="${H-15}" text-anchor="${anchor}">${yearLabel}년</text>`;
+    svgContent += `<line x1="${x}" y1="${padTop}" x2="${x}" y2="${padTop+chartH}" stroke="#222428" stroke-width="1"/>`;
+  }
 
   svg.innerHTML = svgContent;
 }
@@ -687,8 +740,9 @@ bindPair('withdrawReturn','withdrawReturnInput');
 
 document.querySelectorAll('.quick-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    document.getElementById('accumYears').value = btn.dataset.years;
-    document.getElementById('accumYearsInput').value = btn.dataset.years;
+    const target = btn.dataset.target;
+    document.getElementById(target).value = btn.dataset.value;
+    document.getElementById(target + 'Input').value = btn.dataset.value;
     render();
   });
 });
